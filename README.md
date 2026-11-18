@@ -62,6 +62,64 @@ Detects and logs every player movement with timestamp, position, and player ID:
 - **Tactical Landing Zones**: 9-zone court grid (`Front-Left`, `Front-Center`, `Front-Right`, `Mid-Left`, `Mid-Center`, `Mid-Right`, `Back-Left`, `Back-Center`, `Back-Right`).
 - **Trajectory Metrics**: Shot direction (`straight` vs `cross`), net crossing clearance height, and speed in km/h.
 
+### 7. Advanced Analytics, Heatmaps & Reports (Phase 3)
+- **Deep Statistical Engine** (`src/stats/matchStatsCalculator.ts`):
+  * **Player Performance**: Points won/lost, win percentage, winners, unforced errors, forced errors, net differential (+/-).
+  * **Shot Conversions**: Smash win rate, top smash speed (km/h), drop execution vs drop errors (net/out).
+  * **Service & Receive**: First-serve win rate, service faults, receive points won.
+  * **Rally Length Splits**: Points won on short rallies (<4 shots), medium rallies (4–7 shots), and extended rallies (≥8 shots).
+  * **Streaks**: Maximum consecutive scoring runs and longest match rally.
+- **Live In-Match Stats Drawer** (`src/ui/LiveStatsDrawer.tsx`):
+  * Real-time slide-out analytics dock during live video play.
+  * Instant team point-share progress bar, key comparison splits, and live MVP tracking.
+- **Post-Match Analytics Dashboard Modal** (`src/ui/StatsDashboardModal.tsx`):
+  * **Radar & Bar Charts**: Head-to-head comparison via Recharts (Overall, Smashes, Drops, Defense).
+  * **Automated Awards**: `MVP`, `Most Improved`, and `Needs Work` with evidence-based rationales.
+  * **Momentum Timeline**: Score differential graph ($A - B$) with comeback and pressure point markers.
+  * **Pressure Points & Comeback Analysis**: Clutch performance at 18–18 and above/deuce, plus tracking of multi-point deficit comebacks.
+  * **Doubles Pair Synergy**: Rotation efficiency %, zone distribution (Forecourt, Midcourt, Rearcourt).
+- **2D Court Heatmaps** (`src/ui/HeatmapCanvas.tsx`):
+  * **Player Positioning**: Heat density of player footwork across the court.
+  * **Shuttle Landings**: Color-coded landing points (Emerald = IN, Rose = OUT) with speed radii.
+  * **Smash Vectors**: Trajectory arrows colored by shot angle (`straight` vs `cross`).
+  * **Error Clusters**: Spatial map of unforced and forced error origins.
+- **Physical & Movement Analytics**:
+  * Distance covered in meters and kilometers.
+  * Average and top sprint speeds.
+  * Court coverage percentage (% of court surface reached).
+  * Average recovery time to base after shots (seconds).
+  * **Fatigue Indicator**: Percentage drop in player movement speed between the first half and second half of the match.
+- **Multi-Format Export Suite** (`src/stats/exportService.ts`):
+  * **CSV Export**: Full timestamped log of all match rallies and player actions.
+  * **Social Summary Card (PNG)**: 1200 $\times$ 630 high-resolution branded match card rendered dynamically via HTML5 Canvas.
+  * **PDF Match Report**: One-click printable match sheet and analytics breakdown.
+
+---
+
+## 📊 Live Dashboard & HUD Preview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ 🏸 SmashSense LIVE   [ Render: 30fps | Inf: 24fps | 18ms ]     [ A1 21 - 19 B1 ]  [Stats] [⚙] │
+├─────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                         │
+│   [ Camera Video Feed with Calibrated Court Overlay ]                                   │
+│                                                                                         │
+│     Player A1  32 km/h              Shuttlecock Trail >>>                               │
+│     ┌──────────────────┐               • (Landing Point: IN 184 km/h)                   │
+│     │                  │                                                                │
+│     │   Pose Keypoints │                                     Player B1                  │
+│     │                  │                                    ┌──────────────────┐        │
+│     └──────────────────┘                                    │                  │        │
+│                                                             └──────────────────┘        │
+│                                                                                         │
+│  [Recent Actions Feed]                                            [ 2D Mini-Court ]     │
+│  • A1 Jump Smash (184 km/h)                                      ┌──────────────────┐   │
+│  • B1 Lunge Return                                               │  A1 •       • B1 │   │
+│  • A1 Net Kill (WINNER)                                          └──────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
 ---
 
 ## ⚠️ Known Limitations & Setup Recommendations
@@ -106,12 +164,19 @@ smashsense/
 │   │   ├── rallyStateMachine.ts
 │   │   ├── gameState.ts
 │   │   └── __tests__/
+│   ├── stats/              # Statistics engine, metrics calculator, and export service
+│   │   ├── matchStatsCalculator.ts
+│   │   ├── exportService.ts
+│   │   └── __tests__/
 │   ├── storage/            # IndexedDB schema via Dexie (Venues, Calibrations, Matches, Events, Rallies)
 │   │   └── db.ts
-│   ├── ui/                 # React UI components (LiveCameraView, TopBar, ScoreboardOverlay, MiniCourt, etc.)
+│   ├── ui/                 # React UI components (LiveCameraView, StatsDashboardModal, LiveStatsDrawer, HeatmapCanvas, etc.)
 │   │   ├── LiveCameraView.tsx
 │   │   ├── TopBar.tsx
 │   │   ├── ScoreboardOverlay.tsx
+│   │   ├── StatsDashboardModal.tsx
+│   │   ├── LiveStatsDrawer.tsx
+│   │   ├── HeatmapCanvas.tsx
 │   │   ├── AuditLogModal.tsx
 │   │   ├── LandingCallBanner.tsx
 │   │   ├── PlayerActionFeed.tsx

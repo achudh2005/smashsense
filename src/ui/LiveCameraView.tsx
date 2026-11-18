@@ -1,10 +1,10 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useSmashSenseStore } from '../game/gameState';
 import { cameraManager, CameraResolution, RESOLUTION_PRESETS } from '../camera/cameraManager';
 import { useWakeLock } from '../camera/useWakeLock';
 import { PerformanceMeter } from '../camera/fpsMeter';
 import { AdaptiveFrameSkipper } from '../detection/frameSkipper';
-import { MultiPlayerTracker } from '../tracking/byteTrack';
+import { MultiPlayerTracker, PlayerRole } from '../tracking/byteTrack';
 import { ShuttlecockTracker, drawShuttlecockTrail } from '../tracking/shuttlecockTracker';
 import { drawCourtOverlay, drawCalibrationPins } from '../court/courtOverlay';
 import { projectPoint } from '../court/homography';
@@ -14,6 +14,9 @@ import { CalibrationOverlay } from './CalibrationOverlay';
 import { SetupWizard } from './SetupWizard';
 import { LandingCallBanner } from './LandingCallBanner';
 import { PlayerActionFeed } from './PlayerActionFeed';
+import { LiveStatsDrawer } from './LiveStatsDrawer';
+import { StatsDashboardModal } from './StatsDashboardModal';
+import { calculateMatchAnalysis } from '../stats/matchStatsCalculator';
 import { CameraOff, Sparkles } from 'lucide-react';
 import { WorkerInMessage, WorkerOutMessage } from '../detection/types';
 import { db } from '../storage/db';
@@ -59,6 +62,29 @@ export const LiveCameraView: React.FC = () => {
   const dismissLandingCall = useSmashSenseStore((s) => s.dismissLandingCall);
   const recentPlayerActions = useSmashSenseStore((s) => s.recentPlayerActions);
   const config = useSmashSenseStore((s) => s.config);
+  const snapshot = useSmashSenseStore((s) => s.snapshot);
+  const completedRallies = useSmashSenseStore((s) => s.completedRallies);
+  const allPlayerActions = useSmashSenseStore((s) => s.allPlayerActions);
+  const isStatsModalOpen = useSmashSenseStore((s) => s.isStatsModalOpen);
+  const setStatsModalOpen = useSmashSenseStore((s) => s.setStatsModalOpen);
+  const isLiveStatsDrawerOpen = useSmashSenseStore((s) => s.isLiveStatsDrawerOpen);
+  const setLiveStatsDrawerOpen = useSmashSenseStore((s) => s.setLiveStatsDrawerOpen);
+
+  // Compute live match analytics report
+  const matchAnalysis = useMemo(() => {
+    const playerNamesMap: Record<PlayerRole, string> = {
+      A1: config.teamANames.A1,
+      A2: config.teamANames.A2 || 'Partner A',
+      B1: config.teamBNames.B1,
+      B2: config.teamBNames.B2 || 'Partner B',
+    };
+    return calculateMatchAnalysis(
+      completedRallies,
+      allPlayerActions,
+      config.format,
+      playerNamesMap
+    );
+  }, [completedRallies, allPlayerActions, config.format, config.teamANames, config.teamBNames]);
 
   const { isLocked, isSupported, requestWakeLock, releaseWakeLock } = useWakeLock();
 
@@ -474,6 +500,32 @@ export const LiveCameraView: React.FC = () => {
 
       {/* Match Setup Wizard Modal */}
       <SetupWizard />
+
+      {/* Dockable Live Match Analytics Drawer */}
+      <LiveStatsDrawer
+        isOpen={isLiveStatsDrawerOpen}
+        onClose={() => setLiveStatsDrawerOpen(false)}
+        onOpenFullReport={() => {
+          setLiveStatsDrawerOpen(false);
+          setStatsModalOpen(true);
+        }}
+        report={matchAnalysis}
+        teamAName={config.teamANames.A1}
+        teamBName={config.teamBNames.B1}
+        isDoubles={config.format === 'doubles'}
+      />
+
+      {/* Full Post-Match Analytics Dashboard Modal */}
+      <StatsDashboardModal
+        isOpen={isStatsModalOpen}
+        onClose={() => setStatsModalOpen(false)}
+        report={matchAnalysis}
+        rallies={completedRallies}
+        teamAName={config.teamANames.A1}
+        teamBName={config.teamBNames.B1}
+        finalScoreText={`Game ${snapshot.gameIndex}: ${snapshot.scoreA} - ${snapshot.scoreB}`}
+        isDoubles={config.format === 'doubles'}
+      />
     </div>
   );
 };
