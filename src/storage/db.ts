@@ -1,6 +1,8 @@
 import Dexie, { type EntityTable } from 'dexie';
 import { Point2D } from '../court/courtGeometry';
 import { Matrix3x3 } from '../court/homography';
+import { PlayerActionEvent } from '../detection/motionClassifier';
+import { CompletedRally } from '../game/rallyStateMachine';
 
 export interface VenueRecord {
   id?: number;
@@ -51,14 +53,18 @@ export class SmashSenseDatabase extends Dexie {
   calibrations!: EntityTable<CalibrationRecord, 'id'>;
   matches!: EntityTable<MatchRecord, 'id'>;
   events!: EntityTable<MatchEventRecord, 'id'>;
+  playerEvents!: EntityTable<PlayerActionEvent, 'id'>;
+  rallies!: EntityTable<CompletedRally, 'id'>;
 
   constructor() {
     super('SmashSenseDB');
-    this.version(1).stores({
+    this.version(2).stores({
       venues: '++id, name, lastUsedAt',
       calibrations: '++id, venueId, venueName, updatedAt',
       matches: '++id, venueName, createdAt',
       events: '++id, matchId, timestamp, type',
+      playerEvents: 'id, timestamp, playerId, playerRole, action, category',
+      rallies: 'id, rallyNumber, gameIndex, startTime, winningTeam, pointType, endingStroke',
     });
   }
 }
@@ -78,19 +84,17 @@ export async function initDefaultVenueAndCalibration(screenWidth = 1280, screenH
       lastUsedAt: Date.now(),
     });
 
-    // Default perspective corners looking from behind Team B baseline elevated
     const defaultCorners: Point2D[] = [
-      { x: screenWidth * 0.32, y: screenHeight * 0.15 }, // TL
-      { x: screenWidth * 0.68, y: screenHeight * 0.15 }, // TR
-      { x: screenWidth * 0.88, y: screenHeight * 0.85 }, // BR
-      { x: screenWidth * 0.12, y: screenHeight * 0.85 }, // BL
+      { x: screenWidth * 0.30, y: screenHeight * 0.16 }, // TL
+      { x: screenWidth * 0.70, y: screenHeight * 0.16 }, // TR
+      { x: screenWidth * 0.88, y: screenHeight * 0.86 }, // BR
+      { x: screenWidth * 0.12, y: screenHeight * 0.86 }, // BL
     ];
 
     await db.calibrations.add({
       venueId: Number(venueId),
       venueName: 'Default Badminton Court',
       screenCorners: defaultCorners,
-      // Default identity/preset matrices will be computed on load
       courtToImageMatrix: [1, 0, 0, 0, 1, 0, 0, 0, 1],
       imageToCourtMatrix: [1, 0, 0, 0, 1, 0, 0, 0, 1],
       cameraResolution: '720p',
