@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSmashSenseStore } from '../game/gameState';
 import { CameraResolution, RESOLUTION_PRESETS } from '../camera/cameraManager';
 import { ScoreboardOverlay } from './ScoreboardOverlay';
+import { speechService } from '../voice/speechService';
+import { Language } from '../i18n/translations';
 import {
   RefreshCw,
   Sun,
@@ -14,6 +16,16 @@ import {
   Zap,
   BarChart2,
   Trophy,
+  Target,
+  Tv,
+  AlertTriangle,
+  Users,
+  Mic,
+  MicOff,
+  ShieldCheck,
+  BatteryCharging,
+  Battery,
+  HelpCircle,
 } from 'lucide-react';
 
 interface TopBarProps {
@@ -47,6 +59,51 @@ export const TopBar: React.FC<TopBarProps> = ({
   const setStatsModalOpen = useSmashSenseStore((s) => s.setStatsModalOpen);
   const isLiveStatsDrawerOpen = useSmashSenseStore((s) => s.isLiveStatsDrawerOpen);
   const toggleLiveStatsDrawer = useSmashSenseStore((s) => s.toggleLiveStatsDrawer);
+
+  const setTrainingModalOpen = useSmashSenseStore((s) => s.setTrainingModalOpen);
+  const setLargeScoreboardOpen = useSmashSenseStore((s) => s.setLargeScoreboardOpen);
+  const setFlaggedCallsModalOpen = useSmashSenseStore((s) => s.setFlaggedCallsModalOpen);
+  const setProfilesModalOpen = useSmashSenseStore((s) => s.setProfilesModalOpen);
+  const setPrivacyModalOpen = useSmashSenseStore((s) => s.setPrivacyModalOpen);
+  const setOnboardingOpen = useSmashSenseStore((s) => s.setOnboardingOpen);
+  const isLowPowerMode = useSmashSenseStore((s) => s.isLowPowerMode);
+  const toggleLowPowerMode = useSmashSenseStore((s) => s.toggleLowPowerMode);
+  const language = useSmashSenseStore((s) => s.language);
+  const setLanguage = useSmashSenseStore((s) => s.setLanguage);
+  const awardPoint = useSmashSenseStore((s) => s.awardPoint);
+
+  const [isVoiceListening, setIsVoiceListening] = useState(false);
+
+  const toggleVoiceCommands = () => {
+    if (isVoiceListening) {
+      speechService.stopListening();
+      setIsVoiceListening(false);
+    } else {
+      speechService.startListening((cmd) => {
+        if (cmd === 'START') setSimulationMode(true);
+        else if (cmd === 'STOP') setSimulationMode(false);
+        else if (cmd === 'UNDO') undoScore();
+        else if (cmd === 'REDO') redoScore();
+        else if (cmd === 'NEXT_GAME') startNextGame();
+        else if (cmd === 'POINT_A') awardPoint('A', 'Voice command');
+        else if (cmd === 'POINT_B') awardPoint('B', 'Voice command');
+        else if (cmd === 'SCORE') {
+          const isDeuce = snapshot.scoreA >= 20 && snapshot.scoreB >= 20 && snapshot.scoreA === snapshot.scoreB;
+          const isGamePt = (snapshot.scoreA >= 20 || snapshot.scoreB >= 20) && Math.abs(snapshot.scoreA - snapshot.scoreB) >= 1;
+          const isMatchPt = isGamePt && ((snapshot.gamesWonA === 1 && snapshot.scoreA >= 20) || (snapshot.gamesWonB === 1 && snapshot.scoreB >= 20));
+          speechService.announceScore(
+            snapshot.scoreA,
+            snapshot.scoreB,
+            snapshot.servingSide,
+            isDeuce,
+            isGamePt,
+            isMatchPt
+          );
+        }
+      });
+      setIsVoiceListening(true);
+    }
+  };
 
   const snapshot = useSmashSenseStore((s) => s.snapshot);
   const auditLog = useSmashSenseStore((s) => s.auditLog);
@@ -214,6 +271,102 @@ export const TopBar: React.FC<TopBarProps> = ({
         >
           <Trophy size={15} />
           <span className="hidden xl:inline text-xs font-semibold">Report</span>
+        </button>
+
+        {/* Training Mode Modal */}
+        <button
+          onClick={() => setTrainingModalOpen(true)}
+          className="p-2 rounded-lg bg-purple-950/60 hover:bg-purple-900 border border-purple-500/30 text-purple-300 transition-all flex items-center gap-1"
+          title="Solo Training & Drills"
+        >
+          <Target size={15} />
+          <span className="hidden xl:inline text-xs font-semibold">Drills</span>
+        </button>
+
+        {/* Jumbo Scoreboard Mode */}
+        <button
+          onClick={() => setLargeScoreboardOpen(true)}
+          className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+          title="Jumbo Court Scoreboard (View from distance)"
+        >
+          <Tv size={15} />
+        </button>
+
+        {/* Flagged Line Calls Review */}
+        <button
+          onClick={() => setFlaggedCallsModalOpen(true)}
+          className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 transition-all"
+          title="Review Flagged / Low-Confidence Calls"
+        >
+          <AlertTriangle size={15} />
+        </button>
+
+        {/* Player Profiles & History */}
+        <button
+          onClick={() => setProfilesModalOpen(true)}
+          className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-300 transition-all"
+          title="Player Profiles & Head-to-Head Records"
+        >
+          <Users size={15} />
+        </button>
+
+        {/* Hands-Free Voice Commands Toggle */}
+        <button
+          onClick={toggleVoiceCommands}
+          className={`p-2 rounded-lg transition-all ${
+            isVoiceListening
+              ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40 animate-pulse'
+              : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+          }`}
+          title={isVoiceListening ? 'Voice Commands Active ("Start", "Undo", "Point A")' : 'Enable Hands-Free Voice Commands'}
+        >
+          {isVoiceListening ? <Mic size={15} /> : <MicOff size={15} />}
+        </button>
+
+        {/* Low Power Mode Toggle */}
+        <button
+          onClick={toggleLowPowerMode}
+          className={`p-2 rounded-lg transition-all ${
+            isLowPowerMode
+              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+              : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+          }`}
+          title={isLowPowerMode ? 'Low Power Mode ON (Throttled inference)' : 'Low Power Mode OFF'}
+        >
+          {isLowPowerMode ? <BatteryCharging size={15} /> : <Battery size={15} />}
+        </button>
+
+        {/* Language Selector */}
+        <select
+          value={language}
+          onChange={(e) => setLanguage(e.target.value as Language)}
+          className="bg-slate-800 text-slate-200 text-xs rounded-lg px-2 py-1.5 border border-slate-700 focus:outline-none hidden sm:block font-mono"
+          title="Select UI Language"
+        >
+          <option value="en">EN</option>
+          <option value="zh">中文</option>
+          <option value="ja">日本語</option>
+          <option value="id">ID</option>
+          <option value="es">ES</option>
+          <option value="fr">FR</option>
+        </select>
+
+        {/* Onboarding Help */}
+        <button
+          onClick={() => setOnboardingOpen(true)}
+          className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
+          title="Quickstart Guide & Tutorial"
+        >
+          <HelpCircle size={15} />
+        </button>
+
+        {/* Privacy Modal Guarantee */}
+        <button
+          onClick={() => setPrivacyModalOpen(true)}
+          className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400"
+          title="Privacy Guarantee (Zero Video Uploaded)"
+        >
+          <ShieldCheck size={15} />
         </button>
 
         {/* Setup Wizard */}

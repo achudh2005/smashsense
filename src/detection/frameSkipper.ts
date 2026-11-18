@@ -11,6 +11,10 @@ export class AdaptiveFrameSkipper {
     this.minIntervalMs = 1000 / targetFps;
   }
 
+  public setTargetFps(fps: number): void {
+    this.minIntervalMs = 1000 / fps;
+  }
+
   public shouldProcessNextFrame(now: number = performance.now()): boolean {
     if (this.isProcessing) {
       this.skippedFrames++;

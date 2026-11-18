@@ -48,6 +48,46 @@ export interface MatchEventRecord {
   courtCoord?: Point2D;
 }
 
+export interface DrillResultRecord {
+  id?: number;
+  drillId: string;
+  drillType: string;
+  drillName: string;
+  timestamp: number;
+  durationSeconds: number;
+  repsCompleted: number;
+  targetAccuracyPercent: number;
+  score: number;
+  topSpeedKmh?: number;
+  notes?: string;
+}
+
+export interface FlaggedCallRecord {
+  id: string;
+  timestamp: number;
+  rallyNumber: number;
+  gameIndex: number;
+  call: string;
+  confidence: number;
+  distanceToLineCm: number;
+  landingCourt: Point2D;
+  userVerdict?: 'CONFIRMED' | 'OVERTURNED';
+  adjustedMarginCm?: number;
+}
+
+export interface PlayerProfileRecord {
+  id?: number;
+  name: string;
+  totalMatches: number;
+  matchesWon: number;
+  matchesLost: number;
+  winRate: number;
+  topSmashSpeedKmh: number;
+  totalSmashes: number;
+  bestScoringStreak: number;
+  updatedAt: number;
+}
+
 export class SmashSenseDatabase extends Dexie {
   venues!: EntityTable<VenueRecord, 'id'>;
   calibrations!: EntityTable<CalibrationRecord, 'id'>;
@@ -55,16 +95,22 @@ export class SmashSenseDatabase extends Dexie {
   events!: EntityTable<MatchEventRecord, 'id'>;
   playerEvents!: EntityTable<PlayerActionEvent, 'id'>;
   rallies!: EntityTable<CompletedRally, 'id'>;
+  drillResults!: EntityTable<DrillResultRecord, 'id'>;
+  flaggedCalls!: EntityTable<FlaggedCallRecord, 'id'>;
+  playerProfiles!: EntityTable<PlayerProfileRecord, 'id'>;
 
   constructor() {
     super('SmashSenseDB');
-    this.version(2).stores({
+    this.version(3).stores({
       venues: '++id, name, lastUsedAt',
       calibrations: '++id, venueId, venueName, updatedAt',
       matches: '++id, venueName, createdAt',
       events: '++id, matchId, timestamp, type',
       playerEvents: 'id, timestamp, playerId, playerRole, action, category',
       rallies: 'id, rallyNumber, gameIndex, startTime, winningTeam, pointType, endingStroke',
+      drillResults: '++id, drillId, drillType, timestamp, score',
+      flaggedCalls: 'id, timestamp, call, confidence, userVerdict',
+      playerProfiles: '++id, &name, totalMatches, winRate, topSmashSpeedKmh',
     });
   }
 }

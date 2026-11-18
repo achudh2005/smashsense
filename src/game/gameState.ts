@@ -8,6 +8,9 @@ import { BwfScoringEngine, GameStateSnapshot, ScoreAuditEntry, Team } from './sc
 import { RallyStateMachine, CompletedRally, RallyState } from './rallyStateMachine';
 import { PlayerActionEvent } from '../detection/motionClassifier';
 import { LineCallEvaluation } from '../court/lineCallEngine';
+import { accuracyManager } from '../court/accuracyManager';
+import { speechService } from '../voice/speechService';
+import { Language } from '../i18n/translations';
 
 export interface MatchConfig {
   format: 'singles' | 'doubles';
@@ -71,6 +74,14 @@ export interface SmashSenseState {
   isSimulationMode: boolean;
   isStatsModalOpen: boolean;
   isLiveStatsDrawerOpen: boolean;
+  isTrainingModalOpen: boolean;
+  isLargeScoreboardOpen: boolean;
+  isFlaggedCallsModalOpen: boolean;
+  isProfilesModalOpen: boolean;
+  isPrivacyModalOpen: boolean;
+  isOnboardingOpen: boolean;
+  isLowPowerMode: boolean;
+  language: Language;
 
   // Actions
   updateConfig: (config: Partial<MatchConfig>) => void;
@@ -91,8 +102,23 @@ export interface SmashSenseState {
   setSimulationMode: (sim: boolean) => void;
   setStatsModalOpen: (open: boolean) => void;
   setLiveStatsDrawerOpen: (open: boolean) => void;
+  setTrainingModalOpen: (open: boolean) => void;
+  setLargeScoreboardOpen: (open: boolean) => void;
+  setFlaggedCallsModalOpen: (open: boolean) => void;
+  setProfilesModalOpen: (open: boolean) => void;
+  setPrivacyModalOpen: (open: boolean) => void;
+  setOnboardingOpen: (open: boolean) => void;
+  setLowPowerMode: (low: boolean) => void;
+  setLanguage: (lang: Language) => void;
   toggleStatsModal: () => void;
   toggleLiveStatsDrawer: () => void;
+  toggleTrainingModal: () => void;
+  toggleLargeScoreboard: () => void;
+  toggleFlaggedCallsModal: () => void;
+  toggleProfilesModal: () => void;
+  togglePrivacyModal: () => void;
+  toggleOnboarding: () => void;
+  toggleLowPowerMode: () => void;
   toggleMiniCourt: () => void;
   toggleCourtOverlay: () => void;
   toggleSkeleton: () => void;
@@ -168,6 +194,14 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   isSimulationMode: false,
   isStatsModalOpen: false,
   isLiveStatsDrawerOpen: false,
+  isTrainingModalOpen: false,
+  isLargeScoreboardOpen: false,
+  isFlaggedCallsModalOpen: false,
+  isProfilesModalOpen: false,
+  isPrivacyModalOpen: false,
+  isOnboardingOpen: false,
+  isLowPowerMode: false,
+  language: 'en',
 
   updateConfig: (newConfig) => {
     const updated = { ...get().config, ...newConfig };
@@ -194,8 +228,26 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   awardPoint: (team, reason = 'Point scored') => {
     const engine = get().scoringEngine;
     engine.awardPoint(team, { reason, isAutoCall: false });
+    const snap = engine.getSnapshot();
+    const config = get().config;
+
+    const isDeuce = snap.scoreA >= 20 && snap.scoreB >= 20 && snap.scoreA === snap.scoreB;
+    const isGamePt = (snap.scoreA >= 20 || snap.scoreB >= 20) && Math.abs(snap.scoreA - snap.scoreB) >= 1;
+    const isMatchPt = isGamePt && ((snap.gamesWonA === 1 && snap.scoreA >= 20) || (snap.gamesWonB === 1 && snap.scoreB >= 20));
+    const winnerName = snap.isGameOver ? (snap.matchWinner === 'A' || snap.scoreA > snap.scoreB ? config.teamANames.A1 : config.teamBNames.B1) : undefined;
+
+    speechService.announceScore(
+      snap.scoreA,
+      snap.scoreB,
+      snap.servingSide,
+      isDeuce,
+      isGamePt,
+      isMatchPt,
+      winnerName
+    );
+
     set({
-      snapshot: engine.getSnapshot(),
+      snapshot: snap,
       auditLog: engine.getAuditLog(),
       completedGames: engine.getCompletedGames(),
     });
@@ -246,8 +298,33 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
 
   handleCompletedRally: (rally: CompletedRally) => {
     const engine = get().scoringEngine;
+    const snap = engine.getSnapshot();
+    const config = get().config;
+
+    // Accuracy tooling: flag uncertain calls
+    if (accuracyManager.shouldFlagCall(rally.lineCall)) {
+      accuracyManager.logFlaggedCall(rally.lineCall, rally.rallyNumber, rally.gameIndex);
+    }
+
+    // Voice announcement
+    speechService.announceCall(rally.lineCall.call);
+    const isDeuce = snap.scoreA >= 20 && snap.scoreB >= 20 && snap.scoreA === snap.scoreB;
+    const isGamePt = (snap.scoreA >= 20 || snap.scoreB >= 20) && Math.abs(snap.scoreA - snap.scoreB) >= 1;
+    const isMatchPt = isGamePt && ((snap.gamesWonA === 1 && snap.scoreA >= 20) || (snap.gamesWonB === 1 && snap.scoreB >= 20));
+    const winnerName = snap.isGameOver ? (snap.matchWinner === 'A' || snap.scoreA > snap.scoreB ? config.teamANames.A1 : config.teamBNames.B1) : undefined;
+
+    speechService.announceScore(
+      snap.scoreA,
+      snap.scoreB,
+      snap.servingSide,
+      isDeuce,
+      isGamePt,
+      isMatchPt,
+      winnerName
+    );
+
     set((state) => ({
-      snapshot: engine.getSnapshot(),
+      snapshot: snap,
       auditLog: engine.getAuditLog(),
       completedGames: engine.getCompletedGames(),
       completedRallies: [...state.completedRallies, rally],
@@ -306,9 +383,39 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
 
   setLiveStatsDrawerOpen: (open) => set({ isLiveStatsDrawerOpen: open }),
 
+  setTrainingModalOpen: (open) => set({ isTrainingModalOpen: open }),
+
+  setLargeScoreboardOpen: (open) => set({ isLargeScoreboardOpen: open }),
+
+  setFlaggedCallsModalOpen: (open) => set({ isFlaggedCallsModalOpen: open }),
+
+  setProfilesModalOpen: (open) => set({ isProfilesModalOpen: open }),
+
+  setPrivacyModalOpen: (open) => set({ isPrivacyModalOpen: open }),
+
+  setOnboardingOpen: (open) => set({ isOnboardingOpen: open }),
+
+  setLowPowerMode: (low) => set({ isLowPowerMode: low }),
+
+  setLanguage: (lang) => set({ language: lang }),
+
   toggleStatsModal: () => set((state) => ({ isStatsModalOpen: !state.isStatsModalOpen })),
 
   toggleLiveStatsDrawer: () => set((state) => ({ isLiveStatsDrawerOpen: !state.isLiveStatsDrawerOpen })),
+
+  toggleTrainingModal: () => set((state) => ({ isTrainingModalOpen: !state.isTrainingModalOpen })),
+
+  toggleLargeScoreboard: () => set((state) => ({ isLargeScoreboardOpen: !state.isLargeScoreboardOpen })),
+
+  toggleFlaggedCallsModal: () => set((state) => ({ isFlaggedCallsModalOpen: !state.isFlaggedCallsModalOpen })),
+
+  toggleProfilesModal: () => set((state) => ({ isProfilesModalOpen: !state.isProfilesModalOpen })),
+
+  togglePrivacyModal: () => set((state) => ({ isPrivacyModalOpen: !state.isPrivacyModalOpen })),
+
+  toggleOnboarding: () => set((state) => ({ isOnboardingOpen: !state.isOnboardingOpen })),
+
+  toggleLowPowerMode: () => set((state) => ({ isLowPowerMode: !state.isLowPowerMode })),
 
   toggleMiniCourt: () =>
     set((state) => ({ showMiniCourt: !state.showMiniCourt })),

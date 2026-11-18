@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MatchAnalysisReport } from '../stats/matchStatsCalculator';
 import { exportMatchCSV, exportMatchSummaryCard, printOrExportPDF } from '../stats/exportService';
+import { generateRuleBasedInsights, generateLLMCoachingSummary, CoachingInsight } from '../stats/coachingEngine';
 import { HeatmapCanvas } from './HeatmapCanvas';
 import { CompletedRally } from '../game/rallyStateMachine';
 import {
@@ -18,6 +19,9 @@ import {
   Footprints,
   Users,
   Compass,
+  Sparkles,
+  Lightbulb,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -58,8 +62,47 @@ export const StatsDashboardModal: React.FC<StatsDashboardModalProps> = ({
   finalScoreText,
   isDoubles = false,
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'shots' | 'heatmaps' | 'movement' | 'momentum' | 'doubles'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'shots' | 'heatmaps' | 'movement' | 'momentum' | 'coaching' | 'doubles'>('overview');
   const [heatmapType, setHeatmapType] = useState<'players' | 'landings' | 'smashes' | 'errors'>('players');
+  const [apiKey, setApiKey] = useState<string>('');
+  const [llmSummary, setLlmSummary] = useState<string | null>(null);
+  const [isGeneratingLLM, setIsGeneratingLLM] = useState<boolean>(false);
+  const [llmError, setLlmError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof localStorage !== 'undefined') {
+      const savedKey = localStorage.getItem('smashsense_gemini_key') || '';
+      setApiKey(savedKey);
+    }
+  }, []);
+
+  const handleSaveApiKey = (key: string) => {
+    setApiKey(key);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('smashsense_gemini_key', key.trim());
+    }
+  };
+
+  const handleGenerateLLM = async () => {
+    if (!apiKey.trim()) {
+      setLlmError('Please enter a valid Gemini API key.');
+      return;
+    }
+    setIsGeneratingLLM(true);
+    setLlmError(null);
+    try {
+      const summary = await generateLLMCoachingSummary(report, apiKey.trim());
+      setLlmSummary(summary);
+    } catch (err: any) {
+      setLlmError(err.message || 'Failed to generate AI coaching advice.');
+    } finally {
+      setIsGeneratingLLM(false);
+    }
+  };
+
+  const ruleInsights: CoachingInsight[] = useMemo(() => {
+    return generateRuleBasedInsights(report);
+  }, [report]);
 
   if (!isOpen) return null;
 
@@ -171,6 +214,7 @@ export const StatsDashboardModal: React.FC<StatsDashboardModalProps> = ({
             { id: 'heatmaps', label: 'Court Heatmaps', icon: <MapPin size={13} /> },
             { id: 'movement', label: 'Movement & Fatigue', icon: <Footprints size={13} /> },
             { id: 'momentum', label: 'Momentum & Clutch', icon: <TrendingUp size={13} /> },
+            { id: 'coaching', label: 'Smart Coaching', icon: <Sparkles size={13} /> },
             ...(isDoubles ? [{ id: 'doubles', label: 'Doubles Pair Synergy', icon: <Users size={13} /> }] : []),
           ].map((tab) => (
             <button
@@ -684,6 +728,130 @@ export const StatsDashboardModal: React.FC<StatsDashboardModalProps> = ({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* Tab 7: Smart Coaching & Insights */}
+          {activeTab === 'coaching' && (
+            <div className="space-y-6">
+              {/* Header Banner */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-500/10 via-slate-900 to-transparent border border-purple-500/30 flex items-start gap-3">
+                <Lightbulb className="w-6 h-6 text-yellow-400 shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-extrabold text-white mb-1">
+                    Smart Coaching Insights &amp; Tactical Diagnostics
+                  </h3>
+                  <p className="text-xs text-slate-300">
+                    Deterministic plain-language advice derived from stroke accuracy, drop error rates, fatigue drops, and rally lengths.
+                  </p>
+                </div>
+              </div>
+
+              {/* Rule-Based Insights Cards */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Algorithmic Match Findings ({ruleInsights.length})
+                </h4>
+
+                {ruleInsights.length === 0 ? (
+                  <div className="text-center py-8 text-xs text-slate-500 bg-slate-950/40 rounded-2xl border border-slate-800">
+                    No statistical anomalies detected. Play additional rallies to generate deeper tactical findings!
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {ruleInsights.map((insight) => {
+                      const isWarning = insight.severity === 'warning';
+                      const isPositive = insight.severity === 'positive';
+                      return (
+                        <div
+                          key={insight.id}
+                          className={`p-4 rounded-2xl border flex flex-col justify-between ${
+                            isWarning
+                              ? 'bg-rose-950/20 border-rose-500/30'
+                              : isPositive
+                              ? 'bg-emerald-950/20 border-emerald-500/30'
+                              : 'bg-slate-950/60 border-slate-800'
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span
+                                className={`text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded ${
+                                  isWarning
+                                    ? 'bg-rose-500/20 text-rose-300'
+                                    : isPositive
+                                    ? 'bg-emerald-500/20 text-emerald-300'
+                                    : 'bg-yellow-500/20 text-yellow-300'
+                                }`}
+                              >
+                                {insight.category}
+                              </span>
+                              <span className="text-[11px] font-mono text-slate-400">
+                                {insight.metricEvidence}
+                              </span>
+                            </div>
+
+                            <h5 className="text-sm font-bold text-white mb-1">{insight.title}</h5>
+                            <p className="text-xs text-slate-300 leading-relaxed">
+                              {insight.description}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Optional LLM Gemini Coaching Integration */}
+              <div className="bg-slate-950/60 p-5 rounded-3xl border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={16} className="text-purple-400" />
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+                      AI Coach Summary (Gemini 1.5 Flash)
+                    </h4>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    Zero Video Sent • Stats Only
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="password"
+                    placeholder="Enter Gemini API Key (stored locally)..."
+                    value={apiKey}
+                    onChange={(e) => handleSaveApiKey(e.target.value)}
+                    className="flex-1 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-purple-500 font-mono"
+                  />
+                  <button
+                    onClick={handleGenerateLLM}
+                    disabled={isGeneratingLLM || !apiKey.trim()}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      isGeneratingLLM || !apiKey.trim()
+                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                        : 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/40'
+                    }`}
+                  >
+                    <Sparkles size={13} className={isGeneratingLLM ? 'animate-spin' : ''} />
+                    <span>{isGeneratingLLM ? 'Generating Advice...' : 'Generate AI Report'}</span>
+                  </button>
+                </div>
+
+                {llmError && (
+                  <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-xs text-rose-300 flex items-center gap-2">
+                    <AlertTriangle size={14} className="shrink-0" />
+                    <span>{llmError}</span>
+                  </div>
+                )}
+
+                {llmSummary && (
+                  <div className="p-4 rounded-2xl bg-slate-900/80 border border-purple-500/30 text-xs text-slate-200 whitespace-pre-line leading-relaxed font-sans shadow-inner">
+                    {llmSummary}
+                  </div>
+                )}
               </div>
             </div>
           )}

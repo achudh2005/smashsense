@@ -1,0 +1,201 @@
+export type Language = 'en' | 'zh' | 'ja' | 'id' | 'es' | 'fr';
+
+export interface TranslationStrings {
+  appName: string;
+  tagline: string;
+  privacyBadge: string;
+  calibrate: string;
+  liveStats: string;
+  report: string;
+  training: string;
+  voice: string;
+  largeScoreboard: string;
+  lowPowerMode: string;
+  settings: string;
+  privacy: string;
+  game: string;
+  match: string;
+  winner: string;
+  unforcedError: string;
+  forcedError: string;
+  in: string;
+  out: string;
+  serve: string;
+  undo: string;
+  redo: string;
+  nextGame: string;
+  simMatch: string;
+  reviewFlagged: string;
+  profiles: string;
+}
+
+export const TRANSLATIONS: Record<Language, TranslationStrings> = {
+  en: {
+    appName: 'SmashSense',
+    tagline: 'Client-Side AI • Zero Video Uploaded',
+    privacyBadge: '100% Private',
+    calibrate: 'Calibrate',
+    liveStats: 'Live Stats',
+    report: 'Match Report',
+    training: 'Training Mode',
+    voice: 'Voice',
+    largeScoreboard: 'Jumbo Scoreboard',
+    lowPowerMode: 'Low Power',
+    settings: 'Settings',
+    privacy: 'Privacy Guarantee',
+    game: 'Game',
+    match: 'Match',
+    winner: 'WINNER',
+    unforcedError: 'UNFORCED ERROR',
+    forcedError: 'FORCED ERROR',
+    in: 'IN',
+    out: 'OUT',
+    serve: 'Serve',
+    undo: 'Undo',
+    redo: 'Redo',
+    nextGame: 'Next Game',
+    simMatch: 'Sim Match',
+    reviewFlagged: 'Flagged Calls',
+    profiles: 'Player Profiles',
+  },
+  zh: {
+    appName: 'SmashSense 羽感',
+    tagline: '纯本地端AI • 绝不上传视频',
+    privacyBadge: '100% 隐私安全',
+    calibrate: '校准球场',
+    liveStats: '实时数据',
+    report: '比赛报告',
+    training: '专项训练',
+    voice: '语音播报',
+    largeScoreboard: '超大记分牌',
+    lowPowerMode: '低功耗模式',
+    settings: '设置',
+    privacy: '隐私承诺',
+    game: '局',
+    match: '比赛',
+    winner: '制胜分',
+    unforcedError: '非受迫性失误',
+    forcedError: '受迫性失误',
+    in: '界内',
+    out: '界外',
+    serve: '发球',
+    undo: '撤销',
+    redo: '重做',
+    nextGame: '下一局',
+    simMatch: '模拟比赛',
+    reviewFlagged: '争议鹰眼',
+    profiles: '选手档案',
+  },
+  ja: {
+    appName: 'SmashSense',
+    tagline: 'クライアント側AI • 動画保存ゼロ',
+    privacyBadge: '100% プライバシー保護',
+    calibrate: 'コート校正',
+    liveStats: 'ライブ統計',
+    report: '試合レポート',
+    training: 'トレーニング',
+    voice: '音声案内',
+    largeScoreboard: '大型スコアボード',
+    lowPowerMode: '省電力モード',
+    settings: '設定',
+    privacy: 'プライバシー保証',
+    game: 'ゲーム',
+    match: 'マッチ',
+    winner: 'ウィナー',
+    unforcedError: 'アンフォーストエラー',
+    forcedError: 'フォーストエラー',
+    in: 'イン',
+    out: 'アウト',
+    serve: 'サーブ',
+    undo: '元に戻す',
+    redo: 'やり直す',
+    nextGame: '次のゲーム',
+    simMatch: 'シミュレーション',
+    reviewFlagged: '判定レビュー',
+    profiles: '選手プロフィール',
+  },
+  id: {
+    appName: 'SmashSense',
+    tagline: 'AI Sisi Klien • Tanpa Rekaman Video',
+    privacyBadge: '100% Privasi Terjamin',
+    calibrate: 'Kalibrasi',
+    liveStats: 'Statistik Live',
+    report: 'Laporan Laga',
+    training: 'Mode Latihan',
+    voice: 'Suara',
+    largeScoreboard: 'Papan Skor Besar',
+    lowPowerMode: 'Hemat Baterai',
+    settings: 'Pengaturan',
+    privacy: 'Jaminan Privasi',
+    game: 'Game',
+    match: 'Pertandingan',
+    winner: 'Pemenang',
+    unforcedError: 'Kesalahan Sendiri',
+    forcedError: 'Kesalahan Terpaksa',
+    in: 'MASUK',
+    out: 'KELUAR',
+    serve: 'Servis',
+    undo: 'Batal',
+    redo: 'Ulangi',
+    nextGame: 'Game Berikutnya',
+    simMatch: 'Simulasi Laga',
+    reviewFlagged: 'Tinjau Garis',
+    profiles: 'Profil Pemain',
+  },
+  es: {
+    appName: 'SmashSense',
+    tagline: 'IA en el Navegador • Cero Video Subido',
+    privacyBadge: '100% Privado',
+    calibrate: 'Calibrar',
+    liveStats: 'Estadísticas',
+    report: 'Informe',
+    training: 'Entrenamiento',
+    voice: 'Voz',
+    largeScoreboard: 'Marcador Gigante',
+    lowPowerMode: 'Bajo Consumo',
+    settings: 'Ajustes',
+    privacy: 'Garantía de Privacidad',
+    game: 'Juego',
+    match: 'Partido',
+    winner: 'PUNTO GANADOR',
+    unforcedError: 'ERROR NO FORZADO',
+    forcedError: 'ERROR FORZADO',
+    in: 'DENTRO',
+    out: 'FUERA',
+    serve: 'Saque',
+    undo: 'Deshacer',
+    redo: 'Rehacer',
+    nextGame: 'Siguiente Juego',
+    simMatch: 'Simular',
+    reviewFlagged: 'Revisar Líneas',
+    profiles: 'Perfiles de Jugador',
+  },
+  fr: {
+    appName: 'SmashSense',
+    tagline: 'IA 100% Locale • Aucune Vidéo Stockée',
+    privacyBadge: 'Confidentialité Totale',
+    calibrate: 'Calibrer',
+    liveStats: 'Stats Direct',
+    report: 'Rapport de Match',
+    training: 'Entraînement',
+    voice: 'Commandes Vocales',
+    largeScoreboard: 'Tableau Géant',
+    lowPowerMode: 'Mode Économie',
+    settings: 'Paramètres',
+    privacy: 'Protection des Données',
+    game: 'Set',
+    match: 'Match',
+    winner: 'POINT GAGNANT',
+    unforcedError: 'FAUTE DIRECTE',
+    forcedError: 'FAUTE PROVOQUÉE',
+    in: 'DEDANS',
+    out: 'DEHORS',
+    serve: 'Service',
+    undo: 'Annuler',
+    redo: 'Rétablir',
+    nextGame: 'Set Suivant',
+    simMatch: 'Simuler Match',
+    reviewFlagged: 'Revoir Litiges',
+    profiles: 'Profils Joueurs',
+  },
+};
