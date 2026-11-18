@@ -30,6 +30,8 @@ export interface SmashSenseState {
   rallyState: RallyState;
   currentShotCount: number;
   recentPlayerActions: PlayerActionEvent[];
+  completedRallies: CompletedRally[];
+  allPlayerActions: PlayerActionEvent[];
   activeLandingCall: {
     call: LineCallEvaluation;
     pointType?: 'WINNER' | 'UNFORCED_ERROR' | 'FORCED_ERROR';
@@ -67,6 +69,8 @@ export interface SmashSenseState {
   showSkeleton: boolean;
   showShuttleTrail: boolean;
   isSimulationMode: boolean;
+  isStatsModalOpen: boolean;
+  isLiveStatsDrawerOpen: boolean;
 
   // Actions
   updateConfig: (config: Partial<MatchConfig>) => void;
@@ -85,6 +89,10 @@ export interface SmashSenseState {
   setCalibrationMode: (active: boolean) => void;
   setSetupWizardOpen: (open: boolean) => void;
   setSimulationMode: (sim: boolean) => void;
+  setStatsModalOpen: (open: boolean) => void;
+  setLiveStatsDrawerOpen: (open: boolean) => void;
+  toggleStatsModal: () => void;
+  toggleLiveStatsDrawer: () => void;
   toggleMiniCourt: () => void;
   toggleCourtOverlay: () => void;
   toggleSkeleton: () => void;
@@ -149,6 +157,8 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   inferenceFps: 0,
   latencyMs: 0,
 
+  completedRallies: [],
+  allPlayerActions: [],
   isSetupWizardOpen: false,
   isCalibrationMode: false,
   showMiniCourt: true,
@@ -156,6 +166,8 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   showSkeleton: true,
   showShuttleTrail: true,
   isSimulationMode: false,
+  isStatsModalOpen: false,
+  isLiveStatsDrawerOpen: false,
 
   updateConfig: (newConfig) => {
     const updated = { ...get().config, ...newConfig };
@@ -234,10 +246,12 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
 
   handleCompletedRally: (rally: CompletedRally) => {
     const engine = get().scoringEngine;
-    set({
+    set((state) => ({
       snapshot: engine.getSnapshot(),
       auditLog: engine.getAuditLog(),
       completedGames: engine.getCompletedGames(),
+      completedRallies: [...state.completedRallies, rally],
+      allPlayerActions: [...state.allPlayerActions, ...rally.actions],
       activeLandingCall: {
         call: rally.lineCall,
         pointType: rally.pointType,
@@ -246,14 +260,17 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
         winningTeam: rally.winningTeam,
       },
       lastLandingPoint: rally.lineCall.landingCourt,
-    });
+    }));
   },
 
   addPlayerAction: (action) => {
     set((state) => {
       const updated = [...state.recentPlayerActions, action];
       if (updated.length > 25) updated.shift();
-      return { recentPlayerActions: updated };
+      return {
+        recentPlayerActions: updated,
+        allPlayerActions: [...state.allPlayerActions, action],
+      };
     });
   },
 
@@ -284,6 +301,14 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   setSetupWizardOpen: (open) => set({ isSetupWizardOpen: open }),
 
   setSimulationMode: (sim) => set({ isSimulationMode: sim }),
+
+  setStatsModalOpen: (open) => set({ isStatsModalOpen: open }),
+
+  setLiveStatsDrawerOpen: (open) => set({ isLiveStatsDrawerOpen: open }),
+
+  toggleStatsModal: () => set((state) => ({ isStatsModalOpen: !state.isStatsModalOpen })),
+
+  toggleLiveStatsDrawer: () => set((state) => ({ isLiveStatsDrawerOpen: !state.isLiveStatsDrawerOpen })),
 
   toggleMiniCourt: () =>
     set((state) => ({ showMiniCourt: !state.showMiniCourt })),

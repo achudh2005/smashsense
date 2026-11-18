@@ -12,6 +12,8 @@ import {
   Activity,
   Sparkles,
   Zap,
+  BarChart2,
+  Trophy,
 } from 'lucide-react';
 
 interface TopBarProps {
@@ -42,6 +44,9 @@ export const TopBar: React.FC<TopBarProps> = ({
   const toggleMiniCourt = useSmashSenseStore((s) => s.toggleMiniCourt);
   const isSimulationMode = useSmashSenseStore((s) => s.isSimulationMode);
   const setSimulationMode = useSmashSenseStore((s) => s.setSimulationMode);
+  const setStatsModalOpen = useSmashSenseStore((s) => s.setStatsModalOpen);
+  const isLiveStatsDrawerOpen = useSmashSenseStore((s) => s.isLiveStatsDrawerOpen);
+  const toggleLiveStatsDrawer = useSmashSenseStore((s) => s.toggleLiveStatsDrawer);
 
   const snapshot = useSmashSenseStore((s) => s.snapshot);
   const auditLog = useSmashSenseStore((s) => s.auditLog);
@@ -185,6 +190,30 @@ export const TopBar: React.FC<TopBarProps> = ({
           title="Toggle 2D Radar Mini-Court"
         >
           <Radar size={15} />
+        </button>
+
+        {/* Live Stats Drawer Toggle */}
+        <button
+          onClick={toggleLiveStatsDrawer}
+          className={`p-2 rounded-lg transition-all flex items-center gap-1 ${
+            isLiveStatsDrawerOpen
+              ? 'bg-sky-600 text-white shadow-md shadow-sky-900/40'
+              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+          }`}
+          title="Toggle Live Match Stats Drawer"
+        >
+          <BarChart2 size={15} />
+          <span className="hidden xl:inline text-xs">Live Stats</span>
+        </button>
+
+        {/* Full Post-Match Analytics Dashboard Modal */}
+        <button
+          onClick={() => setStatsModalOpen(true)}
+          className="p-2 rounded-lg bg-emerald-600/80 hover:bg-emerald-600 text-white transition-all flex items-center gap-1 shadow-sm"
+          title="Open Post-Match Analytics & Report"
+        >
+          <Trophy size={15} />
+          <span className="hidden xl:inline text-xs font-semibold">Report</span>
         </button>
 
         {/* Setup Wizard */}

@@ -1,6 +1,6 @@
-import { Point2D, BWF_COURT } from '../court/courtGeometry';
-import { CompletedRally, PointType } from '../game/rallyStateMachine';
-import { PlayerActionEvent, StrokeType, MissType } from '../detection/motionClassifier';
+import { Point2D } from '../court/courtGeometry';
+import { CompletedRally } from '../game/rallyStateMachine';
+import { PlayerActionEvent } from '../detection/motionClassifier';
 import { PlayerRole } from '../tracking/byteTrack';
 import { Team } from '../game/scoringEngine';
 
@@ -231,7 +231,6 @@ export function calculateMatchAnalysis(
     totalSpeedSum += rally.maxSpeedKmh;
 
     const winnerTeam = rally.winningTeam;
-    const loserTeam: Team = winnerTeam === 'A' ? 'B' : 'A';
 
     // Update Scores
     if (winnerTeam === 'A') scoreA++;
