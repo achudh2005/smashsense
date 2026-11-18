@@ -95,8 +95,8 @@ export function exportMatchSummaryCard(
 
   // 2. Header Branding
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 36px sans-serif';
-  ctx.fillText('🏸 SmashSense', 70, 80);
+  ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
+  ctx.fillText('SmashSense', 70, 80);
 
   ctx.fillStyle = '#10b981';
   ctx.font = 'bold 16px monospace';

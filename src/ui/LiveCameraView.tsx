@@ -9,6 +9,7 @@ import { ShuttlecockTracker, drawShuttlecockTrail } from '../tracking/shuttlecoc
 import { drawCourtOverlay, drawCalibrationPins } from '../court/courtOverlay';
 import { projectPoint } from '../court/homography';
 import { TopBar } from './TopBar';
+import { MobileBottomBar } from './MobileBottomBar';
 import { MiniCourt } from './MiniCourt';
 import { CalibrationOverlay } from './CalibrationOverlay';
 import { SetupWizard } from './SetupWizard';
@@ -533,13 +534,25 @@ export const LiveCameraView: React.FC = () => {
 
         {/* Docked Top-Down 2D Mini-Court Radar */}
         {showMiniCourt && (
-          <div className="absolute bottom-4 right-4 z-20">
+          <div className="absolute bottom-20 md:bottom-4 right-4 z-20">
             <MiniCourt
               isExpanded={isMiniCourtExpanded}
               onToggleExpand={() => setIsMiniCourtExpanded(!isMiniCourtExpanded)}
             />
           </div>
         )}
+
+        {/* Mobile Navigation Bar */}
+        <MobileBottomBar
+          onOpenScore={() => setLargeScoreboardOpen(true)}
+          onOpenStats={() => setStatsModalOpen(true)}
+          onOpenDrills={() => setTrainingModalOpen(true)}
+          onToggleCalibration={() => setCalibrationMode(!isCalibrationMode)}
+          isCalibrationActive={isCalibrationMode}
+          onOpenCommandPalette={() => {
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
+          }}
+        />
       </div>
 
       {/* Match Setup Wizard Modal */}

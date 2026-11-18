@@ -2,6 +2,9 @@ import React from 'react';
 import { GameStateSnapshot, Team } from '../game/scoringEngine';
 import { X, Volume2, VolumeX, RotateCcw, Plus, Play } from 'lucide-react';
 import { speechService } from '../voice/speechService';
+import { BrandLogo } from './BrandLogo';
+import { triggerHaptic } from '../utils/haptics';
+import { motion } from 'framer-motion';
 
 interface LargeScoreboardModalProps {
   isOpen: boolean;
@@ -29,6 +32,7 @@ export const LargeScoreboardModal: React.FC<LargeScoreboardModalProps> = ({
   const [voiceEnabled, setVoiceEnabled] = React.useState(speechService.getVoiceEnabled());
 
   const toggleVoice = () => {
+    triggerHaptic('selection');
     const next = !voiceEnabled;
     setVoiceEnabled(next);
     speechService.setVoiceEnabled(next);
@@ -37,141 +41,155 @@ export const LargeScoreboardModal: React.FC<LargeScoreboardModalProps> = ({
   const isServerA = snapshot.servingSide === 'A';
   const isServerB = snapshot.servingSide === 'B';
 
+  const handlePointTap = (team: Team) => {
+    triggerHaptic('medium');
+    onAwardPoint(team);
+  };
+
   return (
     <div
       role="dialog"
       aria-label="Jumbo Badminton Scoreboard"
-      className="fixed inset-0 z-50 bg-slate-950 text-white flex flex-col justify-between p-6 sm:p-10 select-none animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 bg-slate-950 text-white flex flex-col justify-between p-6 sm:p-10 select-none"
     >
       {/* Top Header Bar */}
-      <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+      <div className="flex items-center justify-between border-b border-white/10 pb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-black text-xl">
-            🏸
-          </div>
+          <BrandLogo size={32} showText={false} />
           <div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-wide">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
               Game {snapshot.gameIndex}{' '}
-              <span className="text-sm font-semibold text-slate-400 ml-2">
-                (Best of 3 • BWF 21)
+              <span className="text-sm font-normal text-slate-400 ml-2">
+                (BWF 21 • Best of 3)
               </span>
             </h1>
-            <p className="text-xs text-slate-500">Jumbo Court Display Mode</p>
+            <p className="text-xs text-slate-500 font-mono">Distance Scoreboard Mode</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={toggleVoice}
-            className={`p-3 rounded-xl border transition-all ${
+            className={`p-3 rounded-2xl border transition-all ${
               voiceEnabled
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                : 'bg-slate-900 text-slate-500 border-slate-800'
+                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                : 'bg-white/5 text-slate-500 border-white/10'
             }`}
-            title={voiceEnabled ? 'Voice Announcements ON' : 'Voice Announcements OFF'}
+            title={voiceEnabled ? 'Voice Announcements Active' : 'Voice Announcements Muted'}
           >
-            {voiceEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
+            {voiceEnabled ? <Volume2 size={22} /> : <VolumeX size={22} />}
           </button>
 
           <button
-            onClick={onClose}
-            className="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition-colors"
-            title="Exit Jumbo Scoreboard"
+            onClick={() => {
+              triggerHaptic('light');
+              onClose();
+            }}
+            className="p-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-colors"
+            title="Close Scoreboard"
           >
-            <X size={24} />
+            <X size={22} />
           </button>
         </div>
       </div>
 
       {/* Main Jumbo Score Displays */}
       <div className="grid grid-cols-2 gap-6 sm:gap-12 flex-1 items-center justify-center my-6">
-        {/* Team A Jumbo Box */}
-        <div
-          onClick={() => onAwardPoint('A')}
-          className={`h-full max-h-[500px] flex flex-col items-center justify-center rounded-3xl p-6 sm:p-8 border-2 transition-all cursor-pointer relative overflow-hidden group ${
+        {/* Team A Box */}
+        <motion.div
+          whileTap={{ scale: 0.98 }}
+          onClick={() => handlePointTap('A')}
+          className={`h-full max-h-[520px] flex flex-col items-center justify-center rounded-3xl p-6 sm:p-8 border transition-all cursor-pointer relative overflow-hidden group ${
             isServerA
-              ? 'bg-sky-950/40 border-sky-500 shadow-2xl shadow-sky-950/60'
-              : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+              ? 'bg-sky-950/20 border-sky-500/50 shadow-2xl ring-1 ring-sky-500/30'
+              : 'bg-white/[0.02] border-white/10 hover:border-white/20'
           }`}
         >
           {isServerA && (
-            <div className="absolute top-4 right-4 bg-sky-500 text-slate-950 font-black text-xs px-3 py-1 rounded-full uppercase tracking-widest shadow-md">
+            <div className="absolute top-4 right-4 bg-sky-500 text-slate-950 font-bold text-xs px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
               Serving
             </div>
           )}
 
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-sky-400 mb-2 truncate max-w-full text-center">
+          <h2 className="text-2xl sm:text-4xl font-bold text-sky-400 mb-2 truncate max-w-full text-center tracking-tight">
             {teamAName}
           </h2>
           <div className="text-xs uppercase tracking-wider text-slate-400 font-mono mb-4">
-            Games: {snapshot.gamesWonA}
+            Sets: {snapshot.gamesWonA}
           </div>
 
-          <div className="text-8xl sm:text-[160px] md:text-[200px] font-black font-mono leading-none tracking-tight text-white group-hover:scale-105 transition-transform">
+          <div className="text-8xl sm:text-[160px] md:text-[200px] font-bold font-mono leading-none tracking-tighter tabular-nums text-white group-hover:scale-[1.02] transition-transform">
             {snapshot.scoreA}
           </div>
 
-          <div className="mt-4 flex items-center gap-1.5 text-xs text-sky-400/80 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="mt-4 flex items-center gap-1.5 text-xs text-sky-400/80 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
             <Plus size={14} />
-            <span>Tap to add point</span>
+            <span>Tap to record point</span>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Team B Jumbo Box */}
-        <div
-          onClick={() => onAwardPoint('B')}
-          className={`h-full max-h-[500px] flex flex-col items-center justify-center rounded-3xl p-6 sm:p-8 border-2 transition-all cursor-pointer relative overflow-hidden group ${
+        {/* Team B Box */}
+        <motion.div
+          whileTap={{ scale: 0.98 }}
+          onClick={() => handlePointTap('B')}
+          className={`h-full max-h-[520px] flex flex-col items-center justify-center rounded-3xl p-6 sm:p-8 border transition-all cursor-pointer relative overflow-hidden group ${
             isServerB
-              ? 'bg-orange-950/40 border-orange-500 shadow-2xl shadow-orange-950/60'
-              : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+              ? 'bg-amber-950/20 border-amber-500/50 shadow-2xl ring-1 ring-amber-500/30'
+              : 'bg-white/[0.02] border-white/10 hover:border-white/20'
           }`}
         >
           {isServerB && (
-            <div className="absolute top-4 right-4 bg-orange-500 text-slate-950 font-black text-xs px-3 py-1 rounded-full uppercase tracking-widest shadow-md">
+            <div className="absolute top-4 right-4 bg-amber-500 text-slate-950 font-bold text-xs px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
               Serving
             </div>
           )}
 
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-orange-400 mb-2 truncate max-w-full text-center">
+          <h2 className="text-2xl sm:text-4xl font-bold text-amber-400 mb-2 truncate max-w-full text-center tracking-tight">
             {teamBName}
           </h2>
           <div className="text-xs uppercase tracking-wider text-slate-400 font-mono mb-4">
-            Games: {snapshot.gamesWonB}
+            Sets: {snapshot.gamesWonB}
           </div>
 
-          <div className="text-8xl sm:text-[160px] md:text-[200px] font-black font-mono leading-none tracking-tight text-white group-hover:scale-105 transition-transform">
+          <div className="text-8xl sm:text-[160px] md:text-[200px] font-bold font-mono leading-none tracking-tighter tabular-nums text-white group-hover:scale-[1.02] transition-transform">
             {snapshot.scoreB}
           </div>
 
-          <div className="mt-4 flex items-center gap-1.5 text-xs text-orange-400/80 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="mt-4 flex items-center gap-1.5 text-xs text-amber-400/80 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
             <Plus size={14} />
-            <span>Tap to add point</span>
+            <span>Tap to record point</span>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Bottom Footer Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-800/80 pt-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-4">
         <button
-          onClick={onUndo}
-          className="px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-bold text-sm sm:text-base flex items-center gap-2 transition-all"
+          onClick={() => {
+            triggerHaptic('light');
+            onUndo();
+          }}
+          className="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-semibold text-sm sm:text-base flex items-center gap-2 transition-all"
         >
           <RotateCcw size={18} />
-          <span>Undo Last Point</span>
+          <span>Undo Call</span>
         </button>
 
         {snapshot.isGameOver && (
           <button
-            onClick={onStartNextGame}
-            className="px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-base sm:text-lg flex items-center gap-2 shadow-xl shadow-emerald-900/40 animate-pulse transition-all"
+            onClick={() => {
+              triggerHaptic('success');
+              onStartNextGame();
+            }}
+            className="px-8 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base sm:text-lg flex items-center gap-2 shadow-lg shadow-emerald-950/50 transition-all"
           >
             <Play size={20} />
             <span>Start Next Game</span>
           </button>
         )}
 
-        <div className="text-slate-500 text-xs sm:text-sm font-mono text-center sm:text-right">
-          Hands-Free Voice: say &quot;Point A&quot;, &quot;Point B&quot;, or &quot;Undo&quot;
+        <div className="text-slate-400 text-xs sm:text-sm font-mono text-center sm:text-right">
+          Voice shortcuts active: &quot;Point A&quot; • &quot;Point B&quot; • &quot;Undo&quot;
         </div>
       </div>
     </div>

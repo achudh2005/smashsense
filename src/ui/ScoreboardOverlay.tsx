@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { GameStateSnapshot, ScoreAuditEntry, Team } from '../game/scoringEngine';
 import { AuditLogModal } from './AuditLogModal';
+import { haptics } from '../utils/haptics';
 import {
   Undo2,
   Redo2,
@@ -55,6 +56,7 @@ export const ScoreboardOverlay: React.FC<ScoreboardOverlayProps> = ({
   const serverCourt = snapshot.positions[serverRole]?.court || 'right';
 
   const handleApplyManualEdit = () => {
+    haptics.success();
     onManualScoreCorrection(customScoreA, customScoreB, manualReason);
     setIsManualEditOpen(false);
   };
@@ -143,7 +145,10 @@ export const ScoreboardOverlay: React.FC<ScoreboardOverlayProps> = ({
           <div className="flex items-center gap-1 pl-1 border-l border-slate-800">
             {/* Undo */}
             <button
-              onClick={onUndo}
+              onClick={() => {
+                haptics.light();
+                onUndo();
+              }}
               className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white"
               title="Undo last point"
             >
@@ -152,7 +157,10 @@ export const ScoreboardOverlay: React.FC<ScoreboardOverlayProps> = ({
 
             {/* Redo */}
             <button
-              onClick={onRedo}
+              onClick={() => {
+                haptics.light();
+                onRedo();
+              }}
               className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white"
               title="Redo previously undone point"
             >

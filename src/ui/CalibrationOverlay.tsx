@@ -3,6 +3,7 @@ import { Point2D } from '../court/courtGeometry';
 import { computeCourtCalibration } from '../court/homography';
 import { useSmashSenseStore } from '../game/gameState';
 import { db } from '../storage/db';
+import { haptics } from '../utils/haptics';
 import { Check, RotateCcw, Save, Crosshair, MapPin } from 'lucide-react';
 
 interface CalibrationOverlayProps {
@@ -60,9 +61,11 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({
     });
 
     if (clickedPinIdx !== -1) {
+      haptics.selection();
       setDraggingIdx(clickedPinIdx);
       setActiveCornerIdx(clickedPinIdx);
     } else {
+      haptics.light();
       // Place the currently selected corner at clicked point
       const updated = [...localCorners];
       updated[activeCornerIdx] = { x: Math.round(x), y: Math.round(y) };

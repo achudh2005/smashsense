@@ -75,9 +75,9 @@ export class TrainingSessionManager {
     if (evalResult.isHit) this.successfulHits++;
 
     if (evalResult.isHit) {
-      this.currentFeedback = `🎯 TARGET HIT! ${Math.round(evalResult.distanceMeters * 100)}cm from ideal (${Math.round(speedKmh)} km/h)`;
+      this.currentFeedback = `Target Hit: ${Math.round(evalResult.distanceMeters * 100)}cm from ideal (${Math.round(speedKmh)} km/h)`;
     } else {
-      this.currentFeedback = `⚠️ Missed Target Zone (${Math.round(evalResult.distanceMeters * 100)}cm away)`;
+      this.currentFeedback = `Zone Miss: ${Math.round(evalResult.distanceMeters * 100)}cm offset`;
     }
 
     const attempt: DrillAttemptResult = {
@@ -102,8 +102,8 @@ export class TrainingSessionManager {
     if (isHit) this.successfulHits++;
 
     this.currentFeedback = isHit
-      ? `⚡ Sharp Recovery! (${recoveryTimeSec.toFixed(1)}s) → Move to ${this.currentTargetCorner}`
-      : `🐢 Slow Recovery (${recoveryTimeSec.toFixed(1)}s) → Push off aggressively!`;
+      ? `Sharp Recovery (${recoveryTimeSec.toFixed(1)}s) → Move to ${this.currentTargetCorner}`
+      : `Recovery Cadence (${recoveryTimeSec.toFixed(1)}s) → Push off to base`;
 
     const attempt: DrillAttemptResult = {
       attemptNumber: this.totalReps,
@@ -121,7 +121,7 @@ export class TrainingSessionManager {
     if (!this.activeDrill || this.activeDrill.category !== 'shot_counter') return;
     this.totalReps = totalShots;
     this.successfulHits = totalShots;
-    this.currentFeedback = `🔥 ${totalShots} consecutive strokes maintained!`;
+    this.currentFeedback = `${totalShots} consecutive strokes maintained`;
   }
 
   private pickNextCorner() {

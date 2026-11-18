@@ -4,6 +4,7 @@ import { exportMatchCSV, exportMatchSummaryCard, printOrExportPDF } from '../sta
 import { generateRuleBasedInsights, generateLLMCoachingSummary, CoachingInsight } from '../stats/coachingEngine';
 import { HeatmapCanvas } from './HeatmapCanvas';
 import { CompletedRally } from '../game/rallyStateMachine';
+import { BrandLogo } from './BrandLogo';
 import {
   X,
   Trophy,
@@ -155,9 +156,7 @@ export const StatsDashboardModal: React.FC<StatsDashboardModalProps> = ({
         {/* Top Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/70">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-black text-xl">
-              🏸
-            </div>
+            <BrandLogo size={32} showText={false} />
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 SmashSense Match Analytics & Report
