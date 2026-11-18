@@ -11,46 +11,68 @@ SmashSense analyzes live badminton matches directly through your device's camera
 
 ---
 
-## 🚀 Key Features (Phase 1)
+## 🚀 Key Features
 
-1. **Live Camera HUD**:
-   - Camera switching (Environment / Front).
-   - Resolution selector (`480p`, `720p 60fps`, `1080p`).
-   - Real-time **FPS & Latency Indicator** (Camera Render FPS, Web Worker Inference FPS, Detection Latency in ms).
-   - **Screen Wake Lock API**: Prevents your phone/laptop screen from dimming or going to sleep during play.
-   - Landscape-optimized responsive layout designed for mobile court-side mounting.
+### 1. Live Camera HUD & Calibration (Phase 1)
+- **Camera Switching**: Toggle front/environment cameras on mobile/desktop.
+- **Resolution Selector**: Choose `480p`, `720p 60fps`, or `1080p`.
+- **FPS & Latency Indicator**: Camera Render FPS, Worker Inference FPS, and Latency in milliseconds.
+- **Screen Wake Lock API**: Prevents your phone/laptop screen from dimming or going to sleep during play.
+- **Interactive 4-Corner Court Calibration**: Computes Direct Linear Transformation (DLT) 3x3 homography matrix ($H$ and $H^{-1}$) mapping between camera pixel perspective and metric court space (13.40m $\times$ 6.10m).
+- **2D Top-Down Mini-Court Radar**: Live player positioning and shuttle flight radar.
 
-2. **Interactive Court Calibration & Homography**:
-   - 4-corner interactive calibration (Top-Left, Top-Right, Bottom-Right, Bottom-Left).
-   - Computes Direct Linear Transformation (DLT) 3x3 homography matrix ($H$ and $H^{-1}$) mapping between camera pixel perspective and metric court space (13.40m $\times$ 6.10m).
-   - Real-time augmented wireframe overlay: Singles & Doubles sidelines, Baselines, Short service lines, Doubles long service lines, Center lines, and Net.
-   - Loupe / Magnifier tool for pixel-perfect pin placement on touch screens.
-   - Save calibrations per venue in IndexedDB with quick re-calibration presets.
+### 2. Rally State Machine & Auto Detection (Phase 2)
+- Formal finite state machine: `IDLE` $\to$ `SERVING` $\to$ `RALLY_ACTIVE` $\to$ `RALLY_ENDING` $\to$ `POINT_EVALUATED` $\to$ `INTERVAL`.
+- Real-time timestamped rally logging with duration, shot count, max speed, and ending stroke.
 
-3. **Multi-Player Detection & Stable Tracking**:
-   - ByteTrack-style two-stage matching (IoU + spatial Euclidean distance + Kalman filter state estimation).
-   - Stable player IDs (1, 2, 3, 4) resilient against fast lunges and jump smashes.
-   - Pose keypoints (MoveNet / MediaPipe skeleton format).
-   - Role & team assignment wizard (Team A: A1, A2; Team B: B1, B2).
+### 3. IN / OUT Line Call Engine
+- Real-time line evaluation against official BWF singles and doubles dimensions.
+- **Hawk-Eye Style Visualizer**: Glowing landing bullseye on court with expanding animated ripple rings.
+- **Confidence Scoring & Uncertainty Flag**: Computes distance to line in centimeters. If a landing spot is within **5 cm** of the line boundary, it flags an `⚠️ UNCERTAIN CALL - Review advised` warning.
 
-4. **Fast Shuttlecock Trajectory & Comet Trail**:
-   - Real-time small fast-object detector utilizing temporal frame differencing, luminance thresholding, and court bounding mask.
-   - 4D Kalman filter $[x, y, v_x, v_y]$ with outlier rejection.
-   - Glowing fading comet trail on live video with real-time speed badge (km/h) and smash detection.
+### 4. Official BWF Automatic Scoring Engine
+- **Rally Point Scoring**: Point awarded on every rally.
+- **21 Points per Game**: Standard game winning threshold.
+- **Deuce & 2-Point Lead**: At 20-20, requires a 2-point lead (e.g. 22-20, 24-22).
+- **30-Point Sudden Death Cap**: At 29-29, the golden 30th point wins the game immediately (30-29).
+- **Best of 3 Games**: Match won by first side to win 2 games.
+- **Intervals & End Changes**:
+  * 60s interval at 11 points mid-game.
+  * 120s interval between games.
+  * Change ends after Game 1, after Game 2, and in Game 3 when a side first reaches 11 points.
+- **Full Server Rotation & Court Positions**:
+  * **Singles**: Server serves from Right service court when score is even (0, 2, 4...), and Left court when odd (1, 3, 5...).
+  * **Doubles**: Serving side swaps right/left courts when scoring a consecutive point; receivers stay in position. When serve is broken, new server is determined based on the winning side's score.
+- **Live Scoreboard Overlay**:
+  * Manual score correction modal.
+  * Full **Undo** & **Redo** stack.
+  * Complete **Audit Trail** of every auto-call and manual correction.
 
-5. **Live 2D Top-Down Mini-Court (Radar)**:
-   - High-fidelity 2D mini-court displaying player positions in court coordinates.
-   - Dynamic movement trails showing player court coverage.
-   - Shuttlecock 2D flight path and landing coordinate tracking.
+### 5. Player Motion Detection & Action Classifier
+Detects and logs every player movement with timestamp, position, and player ID:
+- **Strokes**: `smash`, `jump_smash`, `clear`, `drop`, `drive`, `net_shot`, `lift`, `serve`, `block`, `flick`.
+- **Movement Footwork**: `lunge`, `split_step`, `jump`, `backward_chasse`, `recovery_to_base`.
+- **Misses**: `failed_return`, `mistimed_swing`, `no_reaction`, `shuttle_left_unreached`.
 
-6. **Match Setup Wizard & Camera Guide**:
-   - Singles vs Doubles configuration.
-   - Player naming and team assignment.
-   - First server selection (with BWF even/odd court rules).
-   - Illustrated camera placement guide (tripod height, baseline distance, angle).
+### 6. Point Attribution & Tactical Metrics
+- Attributed as:
+  * `WINNER`: Clean unreturned shot landing in-bounds.
+  * `UNFORCED_ERROR`: Striker hit shuttle out or into net without pressure.
+  * `FORCED_ERROR`: Striker forced into error under heavy attack/smash ($>160\text{ km/h}$).
+- **Tactical Landing Zones**: 9-zone court grid (`Front-Left`, `Front-Center`, `Front-Right`, `Mid-Left`, `Mid-Center`, `Mid-Right`, `Back-Left`, `Back-Center`, `Back-Right`).
+- **Trajectory Metrics**: Shot direction (`straight` vs `cross`), net crossing clearance height, and speed in km/h.
 
-7. **Simulated Match Mode**:
-   - Built-in realistic badminton rally simulation for immediate testing anywhere without needing a physical court or players.
+---
+
+## ⚠️ Known Limitations & Setup Recommendations
+
+1. **Camera Placement**:
+   - Optimal results require the camera to be elevated **1.8m – 2.5m** directly behind one baseline, tilted down 15°–20°. Extreme ground-level angles increase player-on-player occlusion.
+2. **Lighting & Backgrounds**:
+   - Bright direct backlights (e.g. spotlight aimed into the camera) can create glare that obscures the white shuttlecock.
+   - White walls directly behind court baselines can reduce contrast for high clears.
+3. **Severe Occlusions**:
+   - In doubles, when one player lunges directly in front of their partner along the camera axis, pose keypoints for the rear player may be momentarily interpolated by the Kalman filter.
 
 ---
 
@@ -63,12 +85,14 @@ smashsense/
 │   │   ├── cameraManager.ts
 │   │   ├── fpsMeter.ts
 │   │   └── useWakeLock.ts
-│   ├── court/              # BWF court geometry, homography solver, canvas overlay
+│   ├── court/              # BWF court geometry, homography solver, line call engine
 │   │   ├── courtGeometry.ts
 │   │   ├── homography.ts
 │   │   ├── courtOverlay.ts
+│   │   ├── lineCallEngine.ts
 │   │   └── __tests__/
-│   ├── detection/          # Shuttlecock detector, adaptive frame skipper, types
+│   ├── detection/          # Motion classifier, shuttlecock detector, frame skipper
+│   │   ├── motionClassifier.ts
 │   │   ├── shuttlecockDetector.ts
 │   │   ├── frameSkipper.ts
 │   │   └── types.ts
@@ -77,14 +101,20 @@ smashsense/
 │   │   ├── byteTrack.ts
 │   │   ├── shuttlecockTracker.ts
 │   │   └── __tests__/
-│   ├── game/               # Zustand match state, scorekeeping, BWF serving rules
-│   │   └── gameState.ts
-│   ├── stats/              # Real-time statistics aggregation
-│   ├── storage/            # IndexedDB schema via Dexie (Venues, Calibrations, Matches)
+│   ├── game/               # BWF scoring engine, rally state machine, Zustand store
+│   │   ├── scoringEngine.ts
+│   │   ├── rallyStateMachine.ts
+│   │   ├── gameState.ts
+│   │   └── __tests__/
+│   ├── storage/            # IndexedDB schema via Dexie (Venues, Calibrations, Matches, Events, Rallies)
 │   │   └── db.ts
-│   ├── ui/                 # React UI components (TopBar, MiniCourt, CalibrationOverlay, etc.)
+│   ├── ui/                 # React UI components (LiveCameraView, TopBar, ScoreboardOverlay, MiniCourt, etc.)
 │   │   ├── LiveCameraView.tsx
 │   │   ├── TopBar.tsx
+│   │   ├── ScoreboardOverlay.tsx
+│   │   ├── AuditLogModal.tsx
+│   │   ├── LandingCallBanner.tsx
+│   │   ├── PlayerActionFeed.tsx
 │   │   ├── MiniCourt.tsx
 │   │   ├── CalibrationOverlay.tsx
 │   │   ├── SetupWizard.tsx
@@ -119,15 +149,6 @@ npm run test
 ```bash
 npm run build
 ```
-
----
-
-## 🧪 Unit Tests
-
-SmashSense includes comprehensive unit tests verifying:
-- **Homography Transform**: Exact round-trip mapping between court metric meters and camera pixels, and boundary in-court validation.
-- **Tracker ID Stability**: Verifying player identity persistence across consecutive movement frames, multi-player separation, and role retention.
-- **Court Geometry**: Strict conformance to official BWF dimensional specifications.
 
 ---
 

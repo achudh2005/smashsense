@@ -17,10 +17,11 @@ export const MiniCourt: React.FC<MiniCourtProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const trackedPlayers = useSmashSenseStore((s) => s.trackedPlayers);
   const shuttleTrack = useSmashSenseStore((s) => s.shuttleTrack);
+  const lastLandingPoint = useSmashSenseStore((s) => s.lastLandingPoint);
+  const activeLandingCall = useSmashSenseStore((s) => s.activeLandingCall);
 
   const courtLines = getStandardCourtLines();
 
-  // Court dimensions
   const courtW = BWF_COURT.widthDoubles; // 6.10m
   const courtH = BWF_COURT.length;       // 13.40m
 
@@ -42,7 +43,6 @@ export const MiniCourt: React.FC<MiniCourtProps> = ({
     const scaleX = drawW / courtW;
     const scaleY = drawH / courtH;
 
-    // Coordinate conversion from court meters (0..6.1, 0..13.4) to mini-court canvas pixels
     const toCanvasX = (mx: number) => padX + mx * scaleX;
     const toCanvasY = (my: number) => padY + my * scaleY;
 
@@ -129,7 +129,6 @@ export const MiniCourt: React.FC<MiniCourtProps> = ({
 
     // 5. Draw Shuttlecock 2D position and trail
     if (shuttleTrack && shuttleTrack.trail && shuttleTrack.trail.length > 0) {
-      // Trail
       if (shuttleTrack.trail.length > 1) {
         ctx.beginPath();
         let started = false;
@@ -150,7 +149,6 @@ export const MiniCourt: React.FC<MiniCourtProps> = ({
         ctx.stroke();
       }
 
-      // Head
       const latestCourt = shuttleTrack.currentCourt || (shuttleTrack.trail[shuttleTrack.trail.length - 1].court);
       if (latestCourt) {
         const sx = toCanvasX(latestCourt.x);
@@ -165,7 +163,28 @@ export const MiniCourt: React.FC<MiniCourtProps> = ({
         ctx.stroke();
       }
     }
-  }, [trackedPlayers, shuttleTrack, courtLines, courtW, courtH]);
+
+    // 6. Draw Highlighted Landing Call on Mini-Court if active
+    if (lastLandingPoint && activeLandingCall) {
+      const lx = toCanvasX(lastLandingPoint.x);
+      const ly = toCanvasY(lastLandingPoint.y);
+      const isCallIn = activeLandingCall.call.call === 'IN';
+      const callColor = isCallIn ? '#10b981' : '#f43f5e';
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(lx, ly, 10, 0, Math.PI * 2);
+      ctx.strokeStyle = callColor;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(lx, ly, 4, 0, Math.PI * 2);
+      ctx.fillStyle = callColor;
+      ctx.fill();
+      ctx.restore();
+    }
+  }, [trackedPlayers, shuttleTrack, lastLandingPoint, activeLandingCall, courtLines, courtW, courtH]);
 
   const canvasWidth = isExpanded ? 260 : 160;
   const canvasHeight = isExpanded ? 520 : 320;

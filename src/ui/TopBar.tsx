@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSmashSenseStore } from '../game/gameState';
 import { CameraResolution, RESOLUTION_PRESETS } from '../camera/cameraManager';
+import { ScoreboardOverlay } from './ScoreboardOverlay';
 import {
   RefreshCw,
   Sun,
@@ -9,7 +10,6 @@ import {
   Settings,
   Radar,
   Activity,
-  RotateCcw,
   Sparkles,
   Zap,
 } from 'lucide-react';
@@ -43,22 +43,24 @@ export const TopBar: React.FC<TopBarProps> = ({
   const isSimulationMode = useSmashSenseStore((s) => s.isSimulationMode);
   const setSimulationMode = useSmashSenseStore((s) => s.setSimulationMode);
 
-  const scoreA = useSmashSenseStore((s) => s.scoreA);
-  const scoreB = useSmashSenseStore((s) => s.scoreB);
-  const incrementScore = useSmashSenseStore((s) => s.incrementScore);
-  const resetScore = useSmashSenseStore((s) => s.resetScore);
-  const currentServer = useSmashSenseStore((s) => s.currentServer);
+  const snapshot = useSmashSenseStore((s) => s.snapshot);
+  const auditLog = useSmashSenseStore((s) => s.auditLog);
+  const completedGames = useSmashSenseStore((s) => s.completedGames);
   const config = useSmashSenseStore((s) => s.config);
+  const undoScore = useSmashSenseStore((s) => s.undoScore);
+  const redoScore = useSmashSenseStore((s) => s.redoScore);
+  const manualScoreCorrection = useSmashSenseStore((s) => s.manualScoreCorrection);
+  const startNextGame = useSmashSenseStore((s) => s.startNextGame);
 
   return (
-    <header className="absolute top-0 left-0 right-0 z-30 px-3 py-2 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 flex items-center justify-between text-slate-200 select-none">
+    <header className="absolute top-0 left-0 right-0 z-30 px-3 py-2 bg-slate-950/85 backdrop-blur-md border-b border-slate-800/80 flex items-center justify-between text-slate-200 select-none">
       {/* Left: Brand & Performance HUD */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5">
           <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-black text-base shadow-sm">
             🏸
           </div>
-          <div className="hidden sm:block">
+          <div className="hidden xl:block">
             <h1 className="text-sm font-black tracking-wide text-white flex items-center gap-1">
               SmashSense
               <span className="text-[10px] font-bold px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded border border-emerald-500/30">
@@ -74,13 +76,13 @@ export const TopBar: React.FC<TopBarProps> = ({
           <div className="flex items-center gap-1" title="Camera Render FPS">
             <Activity size={12} className="text-emerald-400" />
             <span className="text-emerald-300 font-bold">{renderFps || 30}</span>
-            <span className="text-[10px] text-slate-500">fps</span>
+            <span className="text-[10px] text-slate-500 hidden sm:inline">fps</span>
           </div>
           <span className="text-slate-700">|</span>
           <div className="flex items-center gap-1" title="Worker Inference FPS">
             <Zap size={12} className="text-yellow-400" />
             <span className="text-yellow-300 font-bold">{inferenceFps || 24}</span>
-            <span className="text-[10px] text-slate-500">inf</span>
+            <span className="text-[10px] text-slate-500 hidden sm:inline">inf</span>
           </div>
           <span className="text-slate-700">|</span>
           <div className="text-[11px] text-slate-400" title="Worker Detection Latency">
@@ -89,51 +91,19 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
       </div>
 
-      {/* Center: Live Match Scoreboard */}
-      <div className="flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3 py-1 rounded-xl shadow-inner">
-        {/* Team A */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-sky-300 truncate max-w-[70px] sm:max-w-[100px]">
-            {config.teamANames.A1}
-          </span>
-          {currentServer.startsWith('A') && (
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" title="Serving" />
-          )}
-          <button
-            onClick={() => incrementScore('A')}
-            className="w-7 h-7 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 font-mono font-bold text-sky-200 text-sm flex items-center justify-center transition-all active:scale-95"
-            title="Add point to Team A"
-          >
-            {scoreA}
-          </button>
-        </div>
-
-        <span className="text-slate-600 font-mono text-xs font-bold">:</span>
-
-        {/* Team B */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => incrementScore('B')}
-            className="w-7 h-7 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 font-mono font-bold text-orange-200 text-sm flex items-center justify-center transition-all active:scale-95"
-            title="Add point to Team B"
-          >
-            {scoreB}
-          </button>
-          {currentServer.startsWith('B') && (
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" title="Serving" />
-          )}
-          <span className="text-xs font-bold text-orange-300 truncate max-w-[70px] sm:max-w-[100px]">
-            {config.teamBNames.B1}
-          </span>
-        </div>
-
-        <button
-          onClick={resetScore}
-          className="p-1 text-slate-500 hover:text-slate-300 ml-1"
-          title="Reset score"
-        >
-          <RotateCcw size={12} />
-        </button>
+      {/* Center: Live BWF Match Scoreboard with Undo/Redo & Audit */}
+      <div className="flex items-center justify-center">
+        <ScoreboardOverlay
+          snapshot={snapshot}
+          auditLog={auditLog}
+          completedGames={completedGames}
+          teamAName={config.teamANames.A1}
+          teamBName={config.teamBNames.B1}
+          onUndo={undoScore}
+          onRedo={redoScore}
+          onManualScoreCorrection={manualScoreCorrection}
+          onStartNextGame={startNextGame}
+        />
       </div>
 
       {/* Right: Controls & Toggles */}
@@ -146,10 +116,10 @@ export const TopBar: React.FC<TopBarProps> = ({
               ? 'bg-purple-600 text-white shadow-md shadow-purple-900/40'
               : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
           }`}
-          title="Toggle Simulation Rally mode (for immediate testing without a physical match)"
+          title="Toggle Simulation Rally mode"
         >
           <Sparkles size={13} className={isSimulationMode ? 'animate-spin' : ''} />
-          <span className="hidden md:inline">{isSimulationMode ? 'Sim Active' : 'Sim Match'}</span>
+          <span className="hidden lg:inline">{isSimulationMode ? 'Sim Active' : 'Sim Match'}</span>
         </button>
 
         {/* Court Calibration Toggle */}
@@ -163,7 +133,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           title="Calibrate Court Corners"
         >
           <Crosshair size={15} />
-          <span className="hidden lg:inline">Calibrate</span>
+          <span className="hidden xl:inline">Calibrate</span>
         </button>
 
         {/* Resolution Selector */}

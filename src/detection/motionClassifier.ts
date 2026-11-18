@@ -49,7 +49,6 @@ export interface PlayerActionEvent {
 
 export class PlayerMotionClassifier {
   private lastActionTimes = new Map<number, { stroke: number; movement: number }>();
-  private previousPlayerPositions = new Map<number, Point2D[]>();
   private previousAnkleHeights = new Map<number, number[]>();
 
   /**
@@ -225,7 +224,6 @@ export class PlayerMotionClassifier {
 
     const isOverhead = highestWristY < avgShoulderY - 10;
     const isUnderarm = highestWristY > avgHipY;
-    const isWaistLevel = !isOverhead && !isUnderarm;
 
     const speed = shuttle.speedKmh;
     const courtY = striker.courtPosition?.y ?? (striker.team === 'A' ? 3.0 : 10.0);

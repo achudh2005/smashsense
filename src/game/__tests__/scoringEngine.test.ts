@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { BwfScoringEngine, ScoringEngineConfig } from '../scoringEngine';
+import { BwfScoringEngine } from '../scoringEngine';
 
 describe('BWF Scoring Engine', () => {
   let singlesEngine: BwfScoringEngine;

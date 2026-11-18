@@ -160,7 +160,6 @@ export class BwfScoringEngine {
 
     // Check game won condition:
     // A side wins if score >= 21 with a 2-point lead, OR reaches 30 first (sudden death cap)
-    const isDeuce = scoreA >= 20 && scoreB >= 20;
     let gameWon = false;
     let gameWinner: Team | undefined;
 
@@ -350,7 +349,7 @@ export class BwfScoringEngine {
           }
           nextServer = prev.currentServer; // same server
           // Receiver is player standing diagonally opposite in the corresponding service court
-          const serverCourt = updatedPositions[nextServer].court;
+          const serverCourt = updatedPositions[nextServer]?.court || 'right';
           nextReceiver = updatedPositions.B1.court === serverCourt ? 'B1' : 'B2';
         } else {
           // Swap B1 and B2 courts
@@ -360,7 +359,7 @@ export class BwfScoringEngine {
             updatedPositions.B2.court = updatedPositions.B1.court === 'right' ? 'left' : 'right';
           }
           nextServer = prev.currentServer;
-          const serverCourt = updatedPositions[nextServer].court;
+          const serverCourt = updatedPositions[nextServer]?.court || 'right';
           nextReceiver = updatedPositions.A1.court === serverCourt ? 'A1' : 'A2';
         }
       } else {
