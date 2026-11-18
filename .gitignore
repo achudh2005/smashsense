@@ -34,3 +34,12 @@ models/
 *.tflite
 *.onnx
 *.bin
+
+.vercel
+
+# Deployment artifacts
+smashsense-dist.zip
+smashsense-nginx*.conf
+smashsense-security-headers.conf
+.netlify/
+

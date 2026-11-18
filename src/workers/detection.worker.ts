@@ -49,7 +49,6 @@ function detectPersonsFromImageData(imageData: ImageData): RawPlayerDetection[] 
   const rows = Math.floor(height / gridStep);
   const motionGrid = new Uint8Array(cols * rows);
 
-  let highContrastPixels = 0;
   for (let r = 0; r < rows; r++) {
     const y = r * gridStep;
     const rowOffset = y * width * 4;
@@ -64,7 +63,6 @@ function detectPersonsFromImageData(imageData: ImageData): RawPlayerDetection[] 
       const isCourtGreen = gVal > 70 && gVal > rVal * 1.15 && gVal > bVal * 1.15;
       if (!isCourtGreen && (rVal > 80 || bVal > 80 || (rVal + gVal + bVal) < 120)) {
         motionGrid[r * cols + c] = 1;
-        highContrastPixels++;
       }
     }
   }

@@ -1,6 +1,12 @@
 # SmashSense
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-smashsense.54.79.20.200.sslip.io-brightgreen?style=for-the-badge&logo=nginx)](https://smashsense.54.79.20.200.sslip.io)
+[![CI](https://github.com/achudh2005/smashsense/actions/workflows/ci.yml/badge.svg)](https://github.com/achudh2005/smashsense/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/badge/version-v1.2.0-blue?style=flat-square)](https://github.com/achudh2005/smashsense/releases/tag/v1.2.0)
+
 > **LIVE Badminton Match Analyzer & Tactical Intelligence** running 100% client-side in the browser on desktop and mobile.
+
+🌐 **[Open SmashSense →](https://smashsense.54.79.20.200.sslip.io)** — works on any device, no install required.
 
 SmashSense analyzes live badminton matches directly through your device's camera in real time using client-side Computer Vision, Web Workers, and WebGL/WebGPU acceleration. 
 

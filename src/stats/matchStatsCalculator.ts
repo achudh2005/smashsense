@@ -487,7 +487,7 @@ export function calculateMatchAnalysis(
   });
 
   // Most Improved: player with high streak or court coverage
-  let mostImprovedRole: PlayerRole = roles.find((r) => r !== mvpRole && r !== needsWorkRole) || roles[0];
+  const mostImprovedRole: PlayerRole = roles.find((r) => r !== mvpRole && r !== needsWorkRole) || roles[0];
   awards.push({
     type: 'MOST_IMPROVED',
     playerRole: mostImprovedRole,

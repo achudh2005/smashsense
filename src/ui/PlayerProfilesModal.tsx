@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { playerProfileService, HeadToHeadRecord } from '../history/playerProfileService';
 import { PlayerProfileRecord } from '../storage/db';
 import {
@@ -27,19 +27,19 @@ export const PlayerProfilesModal: React.FC<PlayerProfilesModalProps> = ({
   const [opponentName, setOpponentName] = useState<string>('');
   const [newPlayerName, setNewPlayerName] = useState('');
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     const list = await playerProfileService.getAllProfiles();
     setProfiles(list);
     if (list.length > 0 && !selectedPlayer) {
       setSelectedPlayer(list[0]);
     }
-  };
+  }, [selectedPlayer]);
 
   useEffect(() => {
     if (isOpen) {
       loadData();
     }
-  }, [isOpen]);
+  }, [isOpen, loadData]);
 
   useEffect(() => {
     if (selectedPlayer && opponentName && selectedPlayer.name !== opponentName) {

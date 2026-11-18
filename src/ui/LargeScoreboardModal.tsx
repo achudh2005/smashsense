@@ -27,9 +27,9 @@ export const LargeScoreboardModal: React.FC<LargeScoreboardModalProps> = ({
   onUndo,
   onStartNextGame,
 }) => {
-  if (!isOpen) return null;
-
   const [voiceEnabled, setVoiceEnabled] = React.useState(speechService.getVoiceEnabled());
+
+  if (!isOpen) return null;
 
   const toggleVoice = () => {
     triggerHaptic('selection');

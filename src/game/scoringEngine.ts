@@ -191,7 +191,7 @@ export class BwfScoringEngine {
     let gamesWonB = prev.gamesWonB;
     let isMatchOver = false;
     let matchWinner: Team | undefined;
-    let isGameOver = gameWon;
+    const isGameOver = gameWon;
 
     if (gameWon && gameWinner) {
       if (gameWinner === 'A') gamesWonA++;

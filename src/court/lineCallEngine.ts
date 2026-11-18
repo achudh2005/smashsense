@@ -47,7 +47,7 @@ export function evaluateLineCall(
   const minX = format === 'singles' ? singlesSideMargin : 0;
   const maxX = format === 'singles' ? widthDoubles - singlesSideMargin : widthDoubles;
   const minY = 0;
-  let maxY = length;
+  const maxY = length;
 
   // During serve, receiver box boundaries apply:
   if (isService) {

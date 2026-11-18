@@ -72,7 +72,8 @@ export const StatsDashboardModal: React.FC<StatsDashboardModalProps> = ({
 
   useEffect(() => {
     if (typeof localStorage !== 'undefined') {
-      const savedKey = localStorage.getItem('smashsense_gemini_key') || '';
+      const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
+      const savedKey = localStorage.getItem('smashsense_gemini_key') || envKey;
       setApiKey(savedKey);
     }
   }, []);

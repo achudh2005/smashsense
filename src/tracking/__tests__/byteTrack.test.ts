@@ -33,7 +33,7 @@ describe('MultiPlayerTracker ID Stability & Tracking', () => {
     const initialId = tracksF2[0].trackId;
 
     // Frame 3 to 10: Player continues moving
-    let currentId = initialId;
+    const currentId = initialId;
     for (let i = 1; i <= 8; i++) {
       const stepDet: RawPlayerDetection[] = [
         {

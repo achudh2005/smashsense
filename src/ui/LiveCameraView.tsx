@@ -113,6 +113,11 @@ export const LiveCameraView: React.FC = () => {
     );
   }, [completedRallies, allPlayerActions, config.format, config.teamANames, config.teamBNames]);
 
+  const matchAnalysisRef = useRef(matchAnalysis);
+  matchAnalysisRef.current = matchAnalysis;
+  const configRef = useRef(config);
+  configRef.current = config;
+
   const { isLocked, isSupported, requestWakeLock, releaseWakeLock } = useWakeLock();
 
   useEffect(() => {
@@ -203,10 +208,11 @@ export const LiveCameraView: React.FC = () => {
           // Update player profiles if game/match ended
           const currentSnap = useSmashSenseStore.getState().snapshot;
           if (currentSnap.isGameOver) {
+            const currentConfig = configRef.current;
             const teamAWon = currentSnap.matchWinner === 'A' || currentSnap.scoreA > currentSnap.scoreB;
-            const winners = teamAWon ? [config.teamANames.A1] : [config.teamBNames.B1];
-            const losers = teamAWon ? [config.teamBNames.B1] : [config.teamANames.A1];
-            playerProfileService.recordMatchCompletion(winners, losers, matchAnalysis).catch(console.warn);
+            const winners = teamAWon ? [currentConfig.teamANames.A1] : [currentConfig.teamBNames.B1];
+            const losers = teamAWon ? [currentConfig.teamBNames.B1] : [currentConfig.teamANames.A1];
+            playerProfileService.recordMatchCompletion(winners, losers, matchAnalysisRef.current).catch(console.warn);
           }
         }
       }

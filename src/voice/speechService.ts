@@ -143,7 +143,9 @@ export class SpeechService {
     this.commandHandler = null;
     try {
       this.recognition?.stop();
-    } catch {}
+    } catch {
+      void 0;
+    }
   }
 
   public getIsListening(): boolean {
@@ -175,7 +177,9 @@ export class SpeechService {
         if (this.isListening) {
           try {
             this.recognition.start();
-          } catch {}
+          } catch {
+            void 0;
+          }
         }
       };
 

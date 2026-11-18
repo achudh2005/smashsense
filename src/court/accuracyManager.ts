@@ -109,7 +109,9 @@ export class AccuracyTuningManager {
       if (saved) {
         this.settings = { ...DEFAULT_TUNING_SETTINGS, ...JSON.parse(saved) };
       }
-    } catch {}
+    } catch {
+      void 0;
+    }
   }
 }
 

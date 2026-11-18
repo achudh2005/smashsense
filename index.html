@@ -2,15 +2,47 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>SmashSense | LIVE Badminton Match Analyzer &amp; Tactical Intelligence</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Real-time live badminton match analyzer running 100% on-device in your browser. Automatic BWF scoring, line calls, player kinematics, and tactical heatmaps with zero video upload." />
+    <meta name="keywords" content="badminton, match analyzer, BWF scoring, AI coach, hawkeye line call, computer vision, court calibration, live statistics" />
+    <meta name="author" content="SmashSense Team" />
+    <link rel="canonical" href="https://smashsense.vercel.app/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://smashsense.vercel.app/" />
+    <meta property="og:title" content="SmashSense | LIVE Badminton Match Analyzer" />
+    <meta property="og:description" content="Live badminton telemetry, automated BWF scoring, and Hawk-Eye line calling directly through your device camera. Zero video uploaded." />
+    <meta property="og:image" content="https://smashsense.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="SmashSense" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://smashsense.vercel.app/" />
+    <meta name="twitter:title" content="SmashSense | LIVE Badminton Match Analyzer" />
+    <meta name="twitter:description" content="100% on-device live badminton match intelligence. BWF scoring, speed tracking, line calling." />
+    <meta name="twitter:image" content="https://smashsense.vercel.app/og-image.png" />
+
+    <!-- PWA, Theme & Apple Web App Meta -->
     <meta name="theme-color" content="#020617" />
-    <meta name="description" content="SmashSense: Real-time Live Badminton Match Analyzer running 100% on-device in your browser." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>SmashSense | Live Badminton Match Analyzer</title>
+    <meta name="apple-mobile-web-app-title" content="SmashSense" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
   <body class="bg-slate-950 text-slate-100 overflow-hidden select-none font-sans antialiased">
+    <noscript>
+      <div style="padding: 2rem; text-align: center; color: #fff; background: #020617; font-family: sans-serif;">
+        <h2>JavaScript Required</h2>
+        <p>SmashSense requires JavaScript and WebGL to run client-side computer vision and court telemetry.</p>
+      </div>
+    </noscript>
     <div id="root" class="w-screen h-screen overflow-hidden"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

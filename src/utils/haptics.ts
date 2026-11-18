@@ -16,35 +16,45 @@ class HapticsEngine {
     if (!this.isSupported) return;
     try {
       navigator.vibrate(6);
-    } catch {}
+    } catch {
+      void 0;
+    }
   }
 
   public medium(): void {
     if (!this.isSupported) return;
     try {
       navigator.vibrate(14);
-    } catch {}
+    } catch {
+      void 0;
+    }
   }
 
   public success(): void {
     if (!this.isSupported) return;
     try {
       navigator.vibrate([10, 40, 15]);
-    } catch {}
+    } catch {
+      void 0;
+    }
   }
 
   public warning(): void {
     if (!this.isSupported) return;
     try {
       navigator.vibrate([25, 40, 25]);
-    } catch {}
+    } catch {
+      void 0;
+    }
   }
 
   public selection(): void {
     if (!this.isSupported) return;
     try {
       navigator.vibrate(4);
-    } catch {}
+    } catch {
+      void 0;
+    }
   }
 }
 

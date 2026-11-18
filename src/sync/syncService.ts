@@ -172,7 +172,9 @@ export class SyncService {
       if (saved) {
         this.currentUser = JSON.parse(saved);
       }
-    } catch {}
+    } catch {
+      void 0;
+    }
   }
 }
 
