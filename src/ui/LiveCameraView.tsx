@@ -16,6 +16,14 @@ import { LandingCallBanner } from './LandingCallBanner';
 import { PlayerActionFeed } from './PlayerActionFeed';
 import { LiveStatsDrawer } from './LiveStatsDrawer';
 import { StatsDashboardModal } from './StatsDashboardModal';
+import { TrainingModeModal } from './TrainingModeModal';
+import { LargeScoreboardModal } from './LargeScoreboardModal';
+import { ReviewFlaggedCallsModal } from './ReviewFlaggedCallsModal';
+import { PlayerProfilesModal } from './PlayerProfilesModal';
+import { PrivacyModal } from './PrivacyModal';
+import { OnboardingTutorial } from './OnboardingTutorial';
+import { trainingManager } from '../training/trainingManager';
+import { playerProfileService } from '../history/playerProfileService';
 import { calculateMatchAnalysis } from '../stats/matchStatsCalculator';
 import { CameraOff, Sparkles } from 'lucide-react';
 import { WorkerInMessage, WorkerOutMessage } from '../detection/types';
@@ -70,6 +78,24 @@ export const LiveCameraView: React.FC = () => {
   const isLiveStatsDrawerOpen = useSmashSenseStore((s) => s.isLiveStatsDrawerOpen);
   const setLiveStatsDrawerOpen = useSmashSenseStore((s) => s.setLiveStatsDrawerOpen);
 
+  const isTrainingModalOpen = useSmashSenseStore((s) => s.isTrainingModalOpen);
+  const setTrainingModalOpen = useSmashSenseStore((s) => s.setTrainingModalOpen);
+  const isLargeScoreboardOpen = useSmashSenseStore((s) => s.isLargeScoreboardOpen);
+  const setLargeScoreboardOpen = useSmashSenseStore((s) => s.setLargeScoreboardOpen);
+  const isFlaggedCallsModalOpen = useSmashSenseStore((s) => s.isFlaggedCallsModalOpen);
+  const setFlaggedCallsModalOpen = useSmashSenseStore((s) => s.setFlaggedCallsModalOpen);
+  const isProfilesModalOpen = useSmashSenseStore((s) => s.isProfilesModalOpen);
+  const setProfilesModalOpen = useSmashSenseStore((s) => s.setProfilesModalOpen);
+  const isPrivacyModalOpen = useSmashSenseStore((s) => s.isPrivacyModalOpen);
+  const setPrivacyModalOpen = useSmashSenseStore((s) => s.setPrivacyModalOpen);
+  const isOnboardingOpen = useSmashSenseStore((s) => s.isOnboardingOpen);
+  const setOnboardingOpen = useSmashSenseStore((s) => s.setOnboardingOpen);
+  const isLowPowerMode = useSmashSenseStore((s) => s.isLowPowerMode);
+  const awardPoint = useSmashSenseStore((s) => s.awardPoint);
+  const undoScore = useSmashSenseStore((s) => s.undoScore);
+  const startNextGame = useSmashSenseStore((s) => s.startNextGame);
+  const setCalibrationMode = useSmashSenseStore((s) => s.setCalibrationMode);
+
   // Compute live match analytics report
   const matchAnalysis = useMemo(() => {
     const playerNamesMap: Record<PlayerRole, string> = {
@@ -91,6 +117,10 @@ export const LiveCameraView: React.FC = () => {
   useEffect(() => {
     setWakeLocked(isLocked);
   }, [isLocked, setWakeLocked]);
+
+  useEffect(() => {
+    frameSkipperRef.current.setTargetFps(isLowPowerMode ? 15 : 25);
+  }, [isLowPowerMode]);
 
   useEffect(() => {
     if (isSupported) {
@@ -162,6 +192,20 @@ export const LiveCameraView: React.FC = () => {
           db.rallies.add(result.completedRally).catch(console.warn);
           if (result.completedRally.actions.length > 0) {
             db.playerEvents.bulkAdd(result.completedRally.actions).catch(console.warn);
+          }
+
+          // Training Mode live landing record
+          if (shuttleCourtPos && trainingManager.getActiveDrill()) {
+            trainingManager.recordShuttleLanding(shuttleCourtPos, shuttleTrack?.speedKmh || 0);
+          }
+
+          // Update player profiles if game/match ended
+          const currentSnap = useSmashSenseStore.getState().snapshot;
+          if (currentSnap.isGameOver) {
+            const teamAWon = currentSnap.matchWinner === 'A' || currentSnap.scoreA > currentSnap.scoreB;
+            const winners = teamAWon ? [config.teamANames.A1] : [config.teamBNames.B1];
+            const losers = teamAWon ? [config.teamBNames.B1] : [config.teamANames.A1];
+            playerProfileService.recordMatchCompletion(winners, losers, matchAnalysis).catch(console.warn);
           }
         }
       }
@@ -525,6 +569,49 @@ export const LiveCameraView: React.FC = () => {
         teamBName={config.teamBNames.B1}
         finalScoreText={`Game ${snapshot.gameIndex}: ${snapshot.scoreA} - ${snapshot.scoreB}`}
         isDoubles={config.format === 'doubles'}
+      />
+
+      {/* Solo Training & Drills Modal */}
+      <TrainingModeModal
+        isOpen={isTrainingModalOpen}
+        onClose={() => setTrainingModalOpen(false)}
+      />
+
+      {/* Jumbo Court Scoreboard Display */}
+      <LargeScoreboardModal
+        isOpen={isLargeScoreboardOpen}
+        onClose={() => setLargeScoreboardOpen(false)}
+        snapshot={snapshot}
+        teamAName={config.teamANames.A1}
+        teamBName={config.teamBNames.B1}
+        onAwardPoint={awardPoint}
+        onUndo={undoScore}
+        onStartNextGame={startNextGame}
+      />
+
+      {/* Line Accuracy & Flagged Calls Review Modal */}
+      <ReviewFlaggedCallsModal
+        isOpen={isFlaggedCallsModalOpen}
+        onClose={() => setFlaggedCallsModalOpen(false)}
+      />
+
+      {/* Player Career Profiles & Head-to-Head Records */}
+      <PlayerProfilesModal
+        isOpen={isProfilesModalOpen}
+        onClose={() => setProfilesModalOpen(false)}
+      />
+
+      {/* Privacy Guarantee Modal */}
+      <PrivacyModal
+        isOpen={isPrivacyModalOpen}
+        onClose={() => setPrivacyModalOpen(false)}
+      />
+
+      {/* Interactive Quickstart Onboarding Tour */}
+      <OnboardingTutorial
+        isOpen={isOnboardingOpen}
+        onClose={() => setOnboardingOpen(false)}
+        onStartCalibration={() => setCalibrationMode(true)}
       />
     </div>
   );

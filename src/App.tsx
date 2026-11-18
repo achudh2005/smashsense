@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { LiveCameraView } from './ui/LiveCameraView';
 import { initDefaultVenueAndCalibration } from './storage/db';
+import { ErrorBoundary } from './ui/ErrorBoundary';
 
 export function App() {
   useEffect(() => {
@@ -8,9 +9,11 @@ export function App() {
   }, []);
 
   return (
-    <main className="w-screen h-screen overflow-hidden bg-slate-950 font-sans">
-      <LiveCameraView />
-    </main>
+    <ErrorBoundary>
+      <main className="w-screen h-screen overflow-hidden bg-slate-950 font-sans">
+        <LiveCameraView />
+      </main>
+    </ErrorBoundary>
   );
 }
 

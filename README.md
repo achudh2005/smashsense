@@ -1,6 +1,6 @@
 # 🏸 SmashSense
 
-> **LIVE Badminton Match Analyzer** running 100% client-side in the browser on desktop and mobile.
+> **LIVE Badminton Match Analyzer & Smart Coach** running 100% client-side in the browser on desktop and mobile.
 
 SmashSense analyzes live badminton matches directly through your device's camera in real time using client-side Computer Vision, Web Workers, and WebGL/WebGPU acceleration. 
 
@@ -13,12 +13,12 @@ SmashSense analyzes live badminton matches directly through your device's camera
 
 ## 🚀 Key Features
 
-### 1. Live Camera HUD & Calibration (Phase 1)
+### 1. Live Camera HUD & Court Calibration (Phase 1)
 - **Camera Switching**: Toggle front/environment cameras on mobile/desktop.
 - **Resolution Selector**: Choose `480p`, `720p 60fps`, or `1080p`.
 - **FPS & Latency Indicator**: Camera Render FPS, Worker Inference FPS, and Latency in milliseconds.
 - **Screen Wake Lock API**: Prevents your phone/laptop screen from dimming or going to sleep during play.
-- **Interactive 4-Corner Court Calibration**: Computes Direct Linear Transformation (DLT) 3x3 homography matrix ($H$ and $H^{-1}$) mapping between camera pixel perspective and metric court space (13.40m $\times$ 6.10m).
+- **Interactive 4-Corner Court Calibration**: Direct Linear Transformation (DLT) 3x3 homography matrix ($H$ and $H^{-1}$) mapping between camera pixel perspective and metric court space (13.40m $\times$ 6.10m).
 - **2D Top-Down Mini-Court Radar**: Live player positioning and shuttle flight radar.
 
 ### 2. Rally State Machine & Auto Detection (Phase 2)
@@ -36,17 +36,9 @@ SmashSense analyzes live badminton matches directly through your device's camera
 - **Deuce & 2-Point Lead**: At 20-20, requires a 2-point lead (e.g. 22-20, 24-22).
 - **30-Point Sudden Death Cap**: At 29-29, the golden 30th point wins the game immediately (30-29).
 - **Best of 3 Games**: Match won by first side to win 2 games.
-- **Intervals & End Changes**:
-  * 60s interval at 11 points mid-game.
-  * 120s interval between games.
-  * Change ends after Game 1, after Game 2, and in Game 3 when a side first reaches 11 points.
-- **Full Server Rotation & Court Positions**:
-  * **Singles**: Server serves from Right service court when score is even (0, 2, 4...), and Left court when odd (1, 3, 5...).
-  * **Doubles**: Serving side swaps right/left courts when scoring a consecutive point; receivers stay in position. When serve is broken, new server is determined based on the winning side's score.
-- **Live Scoreboard Overlay**:
-  * Manual score correction modal.
-  * Full **Undo** & **Redo** stack.
-  * Complete **Audit Trail** of every auto-call and manual correction.
+- **Intervals & End Changes**: 60s at 11 points mid-game, 120s between games, and end changes at 11 in Game 3.
+- **Full Server Rotation & Court Positions**: Standard BWF singles and doubles serving rules.
+- **Live Scoreboard Overlay**: Full **Undo** & **Redo** stack and complete **Audit Trail**.
 
 ### 5. Player Motion Detection & Action Classifier
 Detects and logs every player movement with timestamp, position, and player ID:
@@ -55,82 +47,70 @@ Detects and logs every player movement with timestamp, position, and player ID:
 - **Misses**: `failed_return`, `mistimed_swing`, `no_reaction`, `shuttle_left_unreached`.
 
 ### 6. Point Attribution & Tactical Metrics
-- Attributed as:
-  * `WINNER`: Clean unreturned shot landing in-bounds.
-  * `UNFORCED_ERROR`: Striker hit shuttle out or into net without pressure.
-  * `FORCED_ERROR`: Striker forced into error under heavy attack/smash ($>160\text{ km/h}$).
+- Attributed as: `WINNER`, `UNFORCED_ERROR`, or `FORCED_ERROR`.
 - **Tactical Landing Zones**: 9-zone court grid (`Front-Left`, `Front-Center`, `Front-Right`, `Mid-Left`, `Mid-Center`, `Mid-Right`, `Back-Left`, `Back-Center`, `Back-Right`).
 - **Trajectory Metrics**: Shot direction (`straight` vs `cross`), net crossing clearance height, and speed in km/h.
 
 ### 7. Advanced Analytics, Heatmaps & Reports (Phase 3)
-- **Deep Statistical Engine** (`src/stats/matchStatsCalculator.ts`):
-  * **Player Performance**: Points won/lost, win percentage, winners, unforced errors, forced errors, net differential (+/-).
-  * **Shot Conversions**: Smash win rate, top smash speed (km/h), drop execution vs drop errors (net/out).
-  * **Service & Receive**: First-serve win rate, service faults, receive points won.
-  * **Rally Length Splits**: Points won on short rallies (<4 shots), medium rallies (4–7 shots), and extended rallies (≥8 shots).
-  * **Streaks**: Maximum consecutive scoring runs and longest match rally.
-- **Live In-Match Stats Drawer** (`src/ui/LiveStatsDrawer.tsx`):
-  * Real-time slide-out analytics dock during live video play.
-  * Instant team point-share progress bar, key comparison splits, and live MVP tracking.
-- **Post-Match Analytics Dashboard Modal** (`src/ui/StatsDashboardModal.tsx`):
-  * **Radar & Bar Charts**: Head-to-head comparison via Recharts (Overall, Smashes, Drops, Defense).
-  * **Automated Awards**: `MVP`, `Most Improved`, and `Needs Work` with evidence-based rationales.
-  * **Momentum Timeline**: Score differential graph ($A - B$) with comeback and pressure point markers.
-  * **Pressure Points & Comeback Analysis**: Clutch performance at 18–18 and above/deuce, plus tracking of multi-point deficit comebacks.
-  * **Doubles Pair Synergy**: Rotation efficiency %, zone distribution (Forecourt, Midcourt, Rearcourt).
-- **2D Court Heatmaps** (`src/ui/HeatmapCanvas.tsx`):
-  * **Player Positioning**: Heat density of player footwork across the court.
-  * **Shuttle Landings**: Color-coded landing points (Emerald = IN, Rose = OUT) with speed radii.
-  * **Smash Vectors**: Trajectory arrows colored by shot angle (`straight` vs `cross`).
-  * **Error Clusters**: Spatial map of unforced and forced error origins.
-- **Physical & Movement Analytics**:
-  * Distance covered in meters and kilometers.
-  * Average and top sprint speeds.
-  * Court coverage percentage (% of court surface reached).
-  * Average recovery time to base after shots (seconds).
-  * **Fatigue Indicator**: Percentage drop in player movement speed between the first half and second half of the match.
-- **Multi-Format Export Suite** (`src/stats/exportService.ts`):
-  * **CSV Export**: Full timestamped log of all match rallies and player actions.
-  * **Social Summary Card (PNG)**: 1200 $\times$ 630 high-resolution branded match card rendered dynamically via HTML5 Canvas.
-  * **PDF Match Report**: One-click printable match sheet and analytics breakdown.
+- **Deep Statistical Engine**: Points won/lost, win percentage, winners, unforced errors, forced errors, net differential.
+- **Shot Conversions**: Smash win rate, top smash speed (km/h), drop execution vs drop errors (net/out).
+- **2D Court Heatmaps**: Player positioning density, shuttle landings (Emerald = IN, Rose = OUT), smash vectors, and error clusters.
+- **Movement & Physical Analytics**: Distance covered (m), sprint speeds, court coverage %, recovery time to base, and **Fatigue Indicator** speed-drop %.
+- **Multi-Format Export Suite**: Instant CSV logs, 1200 $\times$ 630 high-res social summary card (PNG), and printable PDF match report.
+
+### 8. Smart Coaching, Training Mode & Voice Control (Phase 4)
+- **Smart Coaching Engine** (`src/stats/coachingEngine.ts`):
+  * **Rule-Based Plain Language Insights**: Immediate diagnostics on drop error rates, extended rally stamina, smash predictability, and base recovery lag.
+  * **Optional LLM Gemini Coaching**: Generate personalized training recommendations and session drill plans via user-provided Gemini API key (strictly sends text metrics, zero video).
+- **Solo Training & Drill Mode** (`src/training/`):
+  * Target zone accuracy for short serves to the "T" and hairpin drops.
+  * Down-the-line smash power drills with speed thresholds ($>160\text{ km/h}$).
+  * 4-corner agility shadow footwork metronome.
+  * Continuous rally shot counter & pace tracker.
+  * Drill history stored in IndexedDB.
+- **Player Profiles & Career Records** (`src/history/`):
+  * Head-to-Head rivalry records between any two players.
+  * Personal career bests: fastest smash (km/h), longest scoring streak, and win percentage.
+- **Hands-Free Voice Features** (`src/voice/`):
+  * Spoken score announcements using official BWF phrasing ("Love all. Play", "20 all. Deuce", "Game point").
+  * Hands-free voice commands via Web Speech API: "Start", "Stop", "Undo", "Redo", "Point A", "Point B", "Next Game".
+- **Hawkeye Accuracy & Flagged Calls Review** (`src/court/accuracyManager.ts`):
+  * Confidence scores on every line decision.
+  * Review screen for close calls within 5 cm. User overturns automatically calibrate detection thresholds.
+- **Cloud Backup & Live Score Sharing** (`src/sync/syncService.ts`):
+  * Complete JSON export & import of all statistics.
+  * Shareable live score URL hash for spectators and coaches to follow matches in real time without video streaming.
+- **Display Modes & Polish**:
+  * **Jumbo Court Scoreboard Mode**: Fullscreen high-contrast display legible from 10–20 meters away across the gym.
+  * **Low-Power Mode**: Adaptive worker throttling down to 15 FPS to conserve device battery.
+  * **Multi-Language Support**: English, Chinese (中文), Japanese (日本語), Indonesian (Bahasa Indonesia), Spanish (Español), and French (Français).
+  * **Quickstart Onboarding Tour**: 4-step interactive guide for camera placement and calibration.
 
 ---
 
-## 📊 Live Dashboard & HUD Preview
+## 📊 Live HUD & Jumbo Court Display Preview
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│ 🏸 SmashSense LIVE   [ Render: 30fps | Inf: 24fps | 18ms ]     [ A1 21 - 19 B1 ]  [Stats] [⚙] │
-├─────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                         │
-│   [ Camera Video Feed with Calibrated Court Overlay ]                                   │
-│                                                                                         │
-│     Player A1  32 km/h              Shuttlecock Trail >>>                               │
-│     ┌──────────────────┐               • (Landing Point: IN 184 km/h)                   │
-│     │                  │                                                                │
-│     │   Pose Keypoints │                                     Player B1                  │
-│     │                  │                                    ┌──────────────────┐        │
-│     └──────────────────┘                                    │                  │        │
-│                                                             └──────────────────┘        │
-│                                                                                         │
-│  [Recent Actions Feed]                                            [ 2D Mini-Court ]     │
-│  • A1 Jump Smash (184 km/h)                                      ┌──────────────────┐   │
-│  • B1 Lunge Return                                               │  A1 •       • B1 │   │
-│  • A1 Net Kill (WINNER)                                          └──────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────────────────┐
+│ 🏸 SmashSense LIVE   [ Render: 30fps | Inf: 24fps | 18ms ]     [ A1 21 - 19 B1 ]  [Drills] [⚙]  │
+├───────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                           │
+│   [ Camera Video Feed with Calibrated Court Overlay ]                                     │
+│                                                                                           │
+│     Player A1  32 km/h              Shuttlecock Trail >>>                                 │
+│     ┌──────────────────┐               • (Landing Point: IN 184 km/h)                     │
+│     │                  │                                                                  │
+│     │   Pose Keypoints │                                     Player B1                    │
+│     │                  │                                    ┌──────────────────┐          │
+│     └──────────────────┘                                    │                  │          │
+│                                                             └──────────────────┘          │
+│                                                                                           │
+│  [Recent Actions Feed]                                            [ 2D Mini-Court ]       │
+│  • A1 Jump Smash (184 km/h)                                      ┌──────────────────┐     │
+│  • B1 Lunge Return                                               │  A1 •       • B1 │     │
+│  • A1 Net Kill (WINNER)                                          └──────────────────┘     │
+└───────────────────────────────────────────────────────────────────────────────────────────┘
 ```
-
----
-
-## ⚠️ Known Limitations & Setup Recommendations
-
-1. **Camera Placement**:
-   - Optimal results require the camera to be elevated **1.8m – 2.5m** directly behind one baseline, tilted down 15°–20°. Extreme ground-level angles increase player-on-player occlusion.
-2. **Lighting & Backgrounds**:
-   - Bright direct backlights (e.g. spotlight aimed into the camera) can create glare that obscures the white shuttlecock.
-   - White walls directly behind court baselines can reduce contrast for high clears.
-3. **Severe Occlusions**:
-   - In doubles, when one player lunges directly in front of their partner along the camera axis, pose keypoints for the rear player may be momentarily interpolated by the Kalman filter.
 
 ---
 
@@ -138,54 +118,37 @@ Detects and logs every player movement with timestamp, position, and player ID:
 
 ```
 smashsense/
+├── .github/workflows/ci.yml # GitHub Actions CI/CD pipeline
 ├── src/
-│   ├── camera/             # Camera stream, resolution switcher, wake lock, FPS meter
-│   │   ├── cameraManager.ts
-│   │   ├── fpsMeter.ts
-│   │   └── useWakeLock.ts
-│   ├── court/              # BWF court geometry, homography solver, line call engine
+│   ├── camera/              # Camera stream, resolution switcher, wake lock, FPS meter
+│   ├── court/               # BWF geometry, homography, line calling, accuracy tuning
 │   │   ├── courtGeometry.ts
 │   │   ├── homography.ts
-│   │   ├── courtOverlay.ts
 │   │   ├── lineCallEngine.ts
+│   │   ├── accuracyManager.ts
 │   │   └── __tests__/
-│   ├── detection/          # Motion classifier, shuttlecock detector, frame skipper
-│   │   ├── motionClassifier.ts
-│   │   ├── shuttlecockDetector.ts
-│   │   ├── frameSkipper.ts
-│   │   └── types.ts
-│   ├── tracking/           # 4D Kalman filter, ByteTrack player tracker, shuttle tracker
-│   │   ├── kalman.ts
-│   │   ├── byteTrack.ts
-│   │   ├── shuttlecockTracker.ts
-│   │   └── __tests__/
-│   ├── game/               # BWF scoring engine, rally state machine, Zustand store
-│   │   ├── scoringEngine.ts
-│   │   ├── rallyStateMachine.ts
-│   │   ├── gameState.ts
-│   │   └── __tests__/
-│   ├── stats/              # Statistics engine, metrics calculator, and export service
+│   ├── detection/           # Motion classifier, shuttle detector, frame skipper
+│   ├── game/                # BWF scoring engine, rally state machine, Zustand store
+│   ├── history/             # Player profiles, head-to-head records, personal bests
+│   │   └── playerProfileService.ts
+│   ├── i18n/                # Multi-language translations (EN, ZH, JA, ID, ES, FR)
+│   ├── stats/               # Metrics calculator, coaching engine, export service
 │   │   ├── matchStatsCalculator.ts
+│   │   ├── coachingEngine.ts
 │   │   ├── exportService.ts
 │   │   └── __tests__/
-│   ├── storage/            # IndexedDB schema via Dexie (Venues, Calibrations, Matches, Events, Rallies)
-│   │   └── db.ts
-│   ├── ui/                 # React UI components (LiveCameraView, StatsDashboardModal, LiveStatsDrawer, HeatmapCanvas, etc.)
-│   │   ├── LiveCameraView.tsx
-│   │   ├── TopBar.tsx
-│   │   ├── ScoreboardOverlay.tsx
-│   │   ├── StatsDashboardModal.tsx
-│   │   ├── LiveStatsDrawer.tsx
-│   │   ├── HeatmapCanvas.tsx
-│   │   ├── AuditLogModal.tsx
-│   │   ├── LandingCallBanner.tsx
-│   │   ├── PlayerActionFeed.tsx
-│   │   ├── MiniCourt.tsx
-│   │   ├── CalibrationOverlay.tsx
-│   │   ├── SetupWizard.tsx
-│   │   └── CameraPositionGuide.tsx
-│   └── workers/            # Web Worker for off-thread frame processing
-│       └── detection.worker.ts
+│   ├── storage/             # IndexedDB schema via Dexie (Venues, Matches, Drills, Calls)
+│   ├── sync/                # Cloud backup, JSON import/export, live share link generator
+│   ├── tracking/            # 4D Kalman filter, ByteTrack player tracker, shuttle tracker
+│   ├── training/            # Solo drills, target zone accuracy, cadence counter
+│   │   ├── drills.ts
+│   │   ├── trainingManager.ts
+│   │   └── __tests__/
+│   ├── ui/                  # React UI HUD, Modals, Heatmaps, Jumbo Scoreboard, Tutorial
+│   ├── voice/               # Web Speech API announcements and voice command recognition
+│   │   ├── speechService.ts
+│   │   └── __tests__/
+│   └── workers/             # Off-thread Web Worker for computer vision inference
 ```
 
 ---
@@ -194,6 +157,8 @@ smashsense/
 
 ### Prerequisites
 - Node.js 18+ and npm
+- A modern browser with WebGL/WebGPU and camera support (Chrome, Safari, Edge, Firefox)
+- **HTTPS Requirement**: Camera access via `getUserMedia` requires a secure HTTPS origin or `localhost`.
 
 ### Installation
 ```bash
@@ -217,5 +182,6 @@ npm run build
 
 ---
 
-## 📜 License
-MIT License
+## 📜 Open Source Notice
+SmashSense is open source and available under standard open source terms.
+Copyright (c) 2026 SmashSense Contributors.
