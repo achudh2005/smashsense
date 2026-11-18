@@ -12,8 +12,11 @@ import { TopBar } from './TopBar';
 import { MiniCourt } from './MiniCourt';
 import { CalibrationOverlay } from './CalibrationOverlay';
 import { SetupWizard } from './SetupWizard';
+import { LandingCallBanner } from './LandingCallBanner';
+import { PlayerActionFeed } from './PlayerActionFeed';
 import { CameraOff, Sparkles } from 'lucide-react';
 import { WorkerInMessage, WorkerOutMessage } from '../detection/types';
+import { db } from '../storage/db';
 
 export const LiveCameraView: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -49,13 +52,20 @@ export const LiveCameraView: React.FC = () => {
   const setFpsStats = useSmashSenseStore((s) => s.setFpsStats);
   const setWakeLocked = useSmashSenseStore((s) => s.setWakeLocked);
 
+  const rallyStateMachine = useSmashSenseStore((s) => s.rallyStateMachine);
+  const handleCompletedRally = useSmashSenseStore((s) => s.handleCompletedRally);
+  const addPlayerAction = useSmashSenseStore((s) => s.addPlayerAction);
+  const activeLandingCall = useSmashSenseStore((s) => s.activeLandingCall);
+  const dismissLandingCall = useSmashSenseStore((s) => s.dismissLandingCall);
+  const recentPlayerActions = useSmashSenseStore((s) => s.recentPlayerActions);
+  const config = useSmashSenseStore((s) => s.config);
+
   const { isLocked, isSupported, requestWakeLock, releaseWakeLock } = useWakeLock();
 
   useEffect(() => {
     setWakeLocked(isLocked);
   }, [isLocked, setWakeLocked]);
 
-  // Request wake lock initially if supported
   useEffect(() => {
     if (isSupported) {
       requestWakeLock().catch(() => {});
@@ -77,7 +87,6 @@ export const LiveCameraView: React.FC = () => {
       if (msg.type === 'FRAME_RESULT') {
         frameSkipperRef.current.markFrameCompleted(msg.processingTimeMs);
 
-        // Update performance stats
         const { inferenceFps, latencyMs } = perfMeterRef.current.recordInference(msg.processingTimeMs);
         const renderFps = perfMeterRef.current.tickRender();
         setFpsStats(renderFps, inferenceFps, latencyMs);
@@ -112,15 +121,31 @@ export const LiveCameraView: React.FC = () => {
         );
 
         setLiveDetections(tracked, shuttleTrack);
+
+        // Run Rally State Machine & Motion Action Detection
+        const result = rallyStateMachine.update(tracked, shuttleTrack, msg.timestamp);
+        if (result.newAction) {
+          addPlayerAction(result.newAction);
+          // Persist player motion event to IndexedDB
+          db.playerEvents.add(result.newAction).catch(console.warn);
+        }
+
+        if (result.completedRally) {
+          handleCompletedRally(result.completedRally);
+          // Persist rally record and actions to IndexedDB
+          db.rallies.add(result.completedRally).catch(console.warn);
+          if (result.completedRally.actions.length > 0) {
+            db.playerEvents.bulkAdd(result.completedRally.actions).catch(console.warn);
+          }
+        }
       }
     };
 
     return () => {
       worker.terminate();
     };
-  }, [imageToCourtMatrix, setLiveDetections, setFpsStats, isSimulationMode]);
+  }, [imageToCourtMatrix, setLiveDetections, setFpsStats, isSimulationMode, rallyStateMachine, handleCompletedRally, addPlayerAction]);
 
-  // Tell worker when simulation mode toggles
   useEffect(() => {
     if (workerRef.current) {
       workerRef.current.postMessage({ type: 'INIT', useSimulation: isSimulationMode });
@@ -149,7 +174,6 @@ export const LiveCameraView: React.FC = () => {
     };
   }, [initCamera]);
 
-  // Handle Video Metadata Loaded
   const handleVideoLoadedMetadata = () => {
     if (videoRef.current) {
       const vw = videoRef.current.videoWidth || RESOLUTION_PRESETS[resolution].width;
@@ -198,7 +222,7 @@ export const LiveCameraView: React.FC = () => {
             drawCalibrationPins(ctx, screenCorners);
           }
 
-          // 3. Draw Tracked Players (Bounding Boxes, Names, Speeds, Skeletons)
+          // 3. Draw Tracked Players
           const tracked = useSmashSenseStore.getState().trackedPlayers;
           for (const player of tracked) {
             const isTeamA = player.team === 'A';
@@ -211,7 +235,7 @@ export const LiveCameraView: React.FC = () => {
             ctx.lineWidth = 2;
             ctx.strokeRect(x, y, width, height);
 
-            // Header Pill: Role & Name & Speed
+            // Header Pill
             const role = player.assignedRole || (isTeamA ? 'Team A' : 'Team B');
             const speedText = player.speedKmh ? ` • ${Math.round(player.speedKmh)} km/h` : '';
             const labelText = `${role}${speedText}`;
@@ -250,6 +274,39 @@ export const LiveCameraView: React.FC = () => {
           const shuttleTrack = useSmashSenseStore.getState().shuttleTrack;
           if (shuttleTrack) {
             drawShuttlecockTrail(ctx, shuttleTrack);
+          }
+
+          // 5. Draw Animated Landing Spot Highlight if active
+          const landingCall = useSmashSenseStore.getState().activeLandingCall;
+          if (landingCall) {
+            const courtPt = landingCall.call.landingCourt;
+            const screenPt = projectPoint(courtToImageMatrix, courtPt);
+            const isCallIn = landingCall.call.call === 'IN';
+            const rippleColor = isCallIn ? '#10b981' : '#f43f5e';
+
+            // Expanding ripple animation
+            const timePhase = (now % 1000) / 1000;
+            const radius = 8 + timePhase * 24;
+            const alpha = 1 - timePhase;
+
+            ctx.save();
+            // Outer ripple ring
+            ctx.beginPath();
+            ctx.arc(screenPt.x, screenPt.y, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = rippleColor;
+            ctx.lineWidth = 2.5;
+            ctx.globalAlpha = alpha;
+            ctx.stroke();
+
+            // Inner solid bullseye
+            ctx.beginPath();
+            ctx.arc(screenPt.x, screenPt.y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = rippleColor;
+            ctx.globalAlpha = 0.95;
+            ctx.shadowColor = rippleColor;
+            ctx.shadowBlur = 12;
+            ctx.fill();
+            ctx.restore();
           }
         }
       }
@@ -355,11 +412,28 @@ export const LiveCameraView: React.FC = () => {
           />
         )}
 
+        {/* Real-Time IN / OUT Line Call Banner */}
+        {activeLandingCall && (
+          <LandingCallBanner
+            call={activeLandingCall.call}
+            pointType={activeLandingCall.pointType}
+            endingStroke={activeLandingCall.endingStroke}
+            maxSpeedKmh={activeLandingCall.maxSpeedKmh}
+            winningTeam={activeLandingCall.winningTeam}
+            teamAName={config.teamANames.A1}
+            teamBName={config.teamBNames.B1}
+            onDismiss={dismissLandingCall}
+          />
+        )}
+
+        {/* Live Player Action Feed in bottom-left */}
+        <PlayerActionFeed actions={recentPlayerActions} />
+
         {/* Simulated Match Banner if active */}
         {isSimulationMode && (
           <div className="absolute top-16 left-4 z-20 bg-purple-950/80 border border-purple-500/50 rounded-xl px-3 py-1.5 flex items-center gap-2 backdrop-blur-md text-purple-200 text-xs shadow-xl">
             <Sparkles size={14} className="text-purple-400 animate-spin" />
-            <span>Simulated Match Mode Active (Testing physics & AI radar)</span>
+            <span>Simulated Match Mode Active (Rally State Machine & Auto-Scoring)</span>
           </div>
         )}
 

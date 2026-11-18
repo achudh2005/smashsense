@@ -4,6 +4,10 @@ import { Matrix3x3, computeCourtCalibration } from '../court/homography';
 import { TrackedPlayer, PlayerRole } from '../tracking/byteTrack';
 import { ShuttlecockTrack } from '../tracking/shuttlecockTracker';
 import { CameraResolution } from '../camera/cameraManager';
+import { BwfScoringEngine, GameStateSnapshot, ScoreAuditEntry, Team } from './scoringEngine';
+import { RallyStateMachine, CompletedRally, RallyState } from './rallyStateMachine';
+import { PlayerActionEvent } from '../detection/motionClassifier';
+import { LineCallEvaluation } from '../court/lineCallEngine';
 
 export interface MatchConfig {
   format: 'singles' | 'doubles';
@@ -16,11 +20,24 @@ export interface MatchConfig {
 export interface SmashSenseState {
   // Game & Match config
   config: MatchConfig;
-  scoreA: number;
-  scoreB: number;
-  currentServer: PlayerRole;
-  currentReceiver: PlayerRole;
-  isMatchActive: boolean;
+  scoringEngine: BwfScoringEngine;
+  rallyStateMachine: RallyStateMachine;
+  snapshot: GameStateSnapshot;
+  auditLog: ReadonlyArray<ScoreAuditEntry>;
+  completedGames: ReadonlyArray<{ gameIndex: number; scoreA: number; scoreB: number; winner: Team }>;
+
+  // Live rally & Action state
+  rallyState: RallyState;
+  currentShotCount: number;
+  recentPlayerActions: PlayerActionEvent[];
+  activeLandingCall: {
+    call: LineCallEvaluation;
+    pointType?: 'WINNER' | 'UNFORCED_ERROR' | 'FORCED_ERROR';
+    endingStroke?: any;
+    maxSpeedKmh?: number;
+    winningTeam?: Team;
+  } | null;
+  lastLandingPoint: Point2D | null;
 
   // Calibration state
   isCalibrated: boolean;
@@ -53,9 +70,13 @@ export interface SmashSenseState {
 
   // Actions
   updateConfig: (config: Partial<MatchConfig>) => void;
-  setScores: (scoreA: number, scoreB: number) => void;
-  incrementScore: (team: 'A' | 'B') => void;
-  resetScore: () => void;
+  awardPoint: (team: Team, reason?: string) => void;
+  undoScore: () => void;
+  redoScore: () => void;
+  manualScoreCorrection: (scoreA: number, scoreB: number, reason: string) => void;
+  startNextGame: () => void;
+  dismissLandingCall: () => void;
+
   setCalibrationCorners: (corners: Point2D[], venueName?: string) => void;
   setLiveDetections: (players: TrackedPlayer[], shuttle: ShuttlecockTrack | null) => void;
   setFpsStats: (renderFps: number, inferenceFps: number, latencyMs: number) => void;
@@ -68,9 +89,11 @@ export interface SmashSenseState {
   toggleCourtOverlay: () => void;
   toggleSkeleton: () => void;
   toggleShuttleTrail: () => void;
+  handleCompletedRally: (rally: CompletedRally) => void;
+  addPlayerAction: (action: PlayerActionEvent) => void;
 }
 
-// Default initial calibration (elevated perspective)
+// Initial default calibration
 const initialScreenCorners: Point2D[] = [
   { x: 380, y: 120 }, // TL
   { x: 900, y: 120 }, // TR
@@ -79,19 +102,36 @@ const initialScreenCorners: Point2D[] = [
 ];
 const initialCalibration = computeCourtCalibration(initialScreenCorners);
 
+const initialConfig: MatchConfig = {
+  format: 'singles',
+  teamANames: { A1: 'Viktor Axelsen' },
+  teamBNames: { B1: 'Lee Zii Jia' },
+  firstServer: 'A1',
+  cameraPosition: 'behind_baseline',
+};
+
+const initialScoringEngine = new BwfScoringEngine({
+  format: initialConfig.format,
+  teamANames: initialConfig.teamANames,
+  teamBNames: initialConfig.teamBNames,
+  initialServer: initialConfig.firstServer,
+});
+
+const initialRallyStateMachine = new RallyStateMachine(initialScoringEngine);
+
 export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
-  config: {
-    format: 'singles',
-    teamANames: { A1: 'Player A1' },
-    teamBNames: { B1: 'Player B1' },
-    firstServer: 'A1',
-    cameraPosition: 'behind_baseline',
-  },
-  scoreA: 0,
-  scoreB: 0,
-  currentServer: 'A1',
-  currentReceiver: 'B1',
-  isMatchActive: true,
+  config: initialConfig,
+  scoringEngine: initialScoringEngine,
+  rallyStateMachine: initialRallyStateMachine,
+  snapshot: initialScoringEngine.getSnapshot(),
+  auditLog: initialScoringEngine.getAuditLog(),
+  completedGames: initialScoringEngine.getCompletedGames(),
+
+  rallyState: 'IDLE',
+  currentShotCount: 0,
+  recentPlayerActions: [],
+  activeLandingCall: null,
+  lastLandingPoint: null,
 
   isCalibrated: true,
   activeVenueName: 'Default Court Preset',
@@ -117,31 +157,105 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   showShuttleTrail: true,
   isSimulationMode: false,
 
-  updateConfig: (newConfig) =>
-    set((state) => ({ config: { ...state.config, ...newConfig } })),
-
-  setScores: (scoreA, scoreB) => set({ scoreA, scoreB }),
-
-  incrementScore: (team) => {
-    const { scoreA, scoreB } = get();
-    const newA = team === 'A' ? scoreA + 1 : scoreA;
-    const newB = team === 'B' ? scoreB + 1 : scoreB;
-
-    // Determine next server according to BWF rules
-    // In singles, even score serves from right court, odd from left court
-    const isTeamAServing = team === 'A';
-    const serverRole: PlayerRole = isTeamAServing ? 'A1' : 'B1';
-    const receiverRole: PlayerRole = isTeamAServing ? 'B1' : 'A1';
+  updateConfig: (newConfig) => {
+    const updated = { ...get().config, ...newConfig };
+    const newEngine = new BwfScoringEngine({
+      format: updated.format,
+      teamANames: updated.teamANames,
+      teamBNames: updated.teamBNames,
+      initialServer: updated.firstServer,
+    });
+    const newRallySM = new RallyStateMachine(newEngine);
 
     set({
-      scoreA: newA,
-      scoreB: newB,
-      currentServer: serverRole,
-      currentReceiver: receiverRole,
+      config: updated,
+      scoringEngine: newEngine,
+      rallyStateMachine: newRallySM,
+      snapshot: newEngine.getSnapshot(),
+      auditLog: newEngine.getAuditLog(),
+      completedGames: newEngine.getCompletedGames(),
+      recentPlayerActions: [],
+      activeLandingCall: null,
     });
   },
 
-  resetScore: () => set({ scoreA: 0, scoreB: 0 }),
+  awardPoint: (team, reason = 'Point scored') => {
+    const engine = get().scoringEngine;
+    engine.awardPoint(team, { reason, isAutoCall: false });
+    set({
+      snapshot: engine.getSnapshot(),
+      auditLog: engine.getAuditLog(),
+      completedGames: engine.getCompletedGames(),
+    });
+  },
+
+  undoScore: () => {
+    const engine = get().scoringEngine;
+    engine.undo();
+    set({
+      snapshot: engine.getSnapshot(),
+      auditLog: engine.getAuditLog(),
+      completedGames: engine.getCompletedGames(),
+    });
+  },
+
+  redoScore: () => {
+    const engine = get().scoringEngine;
+    engine.redo();
+    set({
+      snapshot: engine.getSnapshot(),
+      auditLog: engine.getAuditLog(),
+      completedGames: engine.getCompletedGames(),
+    });
+  },
+
+  manualScoreCorrection: (scoreA, scoreB, reason) => {
+    const engine = get().scoringEngine;
+    engine.manualScoreCorrection(scoreA, scoreB, reason);
+    set({
+      snapshot: engine.getSnapshot(),
+      auditLog: engine.getAuditLog(),
+      completedGames: engine.getCompletedGames(),
+    });
+  },
+
+  startNextGame: () => {
+    const engine = get().scoringEngine;
+    engine.startNextGame();
+    set({
+      snapshot: engine.getSnapshot(),
+      auditLog: engine.getAuditLog(),
+      completedGames: engine.getCompletedGames(),
+      activeLandingCall: null,
+    });
+  },
+
+  dismissLandingCall: () => set({ activeLandingCall: null }),
+
+  handleCompletedRally: (rally: CompletedRally) => {
+    const engine = get().scoringEngine;
+    set({
+      snapshot: engine.getSnapshot(),
+      auditLog: engine.getAuditLog(),
+      completedGames: engine.getCompletedGames(),
+      activeLandingCall: {
+        call: rally.lineCall,
+        pointType: rally.pointType,
+        endingStroke: rally.endingStroke,
+        maxSpeedKmh: rally.maxSpeedKmh,
+        winningTeam: rally.winningTeam,
+      },
+      lastLandingPoint: rally.lineCall.landingCourt,
+    });
+  },
+
+  addPlayerAction: (action) => {
+    set((state) => {
+      const updated = [...state.recentPlayerActions, action];
+      if (updated.length > 25) updated.shift();
+      return { recentPlayerActions: updated };
+    });
+  },
 
   setCalibrationCorners: (corners, venueName) => {
     const { matrix, inverse } = computeCourtCalibration(corners);
