@@ -2,8 +2,11 @@ import { FastShuttlecockDetector } from '../detection/shuttlecockDetector';
 import { WorkerInMessage, FrameProcessingResponse } from '../detection/types';
 import { RawPlayerDetection, Keypoint } from '../tracking/byteTrack';
 import { Point2D } from '../court/courtGeometry';
+import { AutoCourtDetector } from '../court/autoCourtDetector';
+import { extractJerseyColorFromImageData } from '../detection/playerIdentification';
 
 const shuttleDetector = new FastShuttlecockDetector();
+const courtDetector = new AutoCourtDetector();
 
 let useSimulation = false;
 let simFrame = 0;
@@ -108,14 +111,17 @@ function detectPersonsFromImageData(imageData: ImageData): RawPlayerDetection[] 
     if (bottomRow > topRow + 5) {
       const py = topRow * gridStep;
       const ph = Math.max(100, (bottomRow - topRow + 2) * gridStep);
+      const bbox = { x: px, y: py, width: pw, height: ph };
 
       const kps = generatePoseKeypoints(px, py, pw, ph, performance.now() / 250 + i);
+      const jerseyColor = extractJerseyColorFromImageData(imageData, bbox);
 
       detections.push({
-        bbox: { x: px, y: py, width: pw, height: ph },
+        bbox,
         score: 0.85,
         keypoints: kps,
-        footPosition: { x: px + pw / 2, y: py + ph }
+        footPosition: { x: px + pw / 2, y: py + ph },
+        jerseyColor,
       });
     }
   }
@@ -150,13 +156,15 @@ function generateSimulatedRally(width: number, height: number): {
       bbox: { x: a1X - a1W / 2, y: a1Y - a1H, width: a1W, height: a1H },
       score: 0.94,
       keypoints: generatePoseKeypoints(a1X - a1W / 2, a1Y - a1H, a1W, a1H, t * 2),
-      footPosition: { x: a1X, y: a1Y }
+      footPosition: { x: a1X, y: a1Y },
+      jerseyColor: { hex: '#ef4444', name: 'Crimson Red', isLight: false },
     },
     {
       bbox: { x: b1X - b1W / 2, y: b1Y - b1H, width: b1W, height: b1H },
       score: 0.96,
       keypoints: generatePoseKeypoints(b1X - b1W / 2, b1Y - b1H, b1W, b1H, t * 2 + Math.PI),
-      footPosition: { x: b1X, y: b1Y }
+      footPosition: { x: b1X, y: b1Y },
+      jerseyColor: { hex: '#38bdf8', name: 'Sky Blue', isLight: true },
     }
   ];
 
@@ -190,7 +198,13 @@ self.onmessage = (event: MessageEvent<WorkerInMessage>) => {
 
   if (msg.type === 'INIT') {
     useSimulation = !!msg.useSimulation;
+    courtDetector.reset();
     self.postMessage({ type: 'READY' });
+    return;
+  }
+
+  if (msg.type === 'RESET_AUTO_DETECT') {
+    courtDetector.reset();
     return;
   }
 
@@ -198,6 +212,14 @@ self.onmessage = (event: MessageEvent<WorkerInMessage>) => {
     const startTime = performance.now();
     let players: RawPlayerDetection[] = [];
     let shuttleResult: { pixel: Point2D; confidence: number } | null = null;
+
+    // Run Auto Court Detection
+    const detectedCourt = courtDetector.detect(
+      msg.imageData,
+      msg.width,
+      msg.height,
+      useSimulation
+    );
 
     if (useSimulation) {
       const sim = generateSimulatedRally(msg.width, msg.height);
@@ -224,6 +246,7 @@ self.onmessage = (event: MessageEvent<WorkerInMessage>) => {
       timestamp: msg.timestamp,
       players,
       shuttlecock: shuttleResult,
+      detectedCourt,
       processingTimeMs: Math.round(duration)
     };
 

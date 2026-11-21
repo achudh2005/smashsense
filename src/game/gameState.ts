@@ -51,6 +51,13 @@ export interface SmashSenseState {
   courtToImageMatrix: Matrix3x3;
   imageToCourtMatrix: Matrix3x3;
 
+  // Auto-detection telemetry
+  isAutoDetectEnabled: boolean;
+  autoCourtStatus: 'SCANNING' | 'ACQUIRED' | 'LOCKED' | 'FALLBACK';
+  autoCourtConfidence: number;
+  autoCourtMessage: string;
+  identifiedPlayersCount: number;
+
   // Camera & Stream settings
   facingMode: 'user' | 'environment';
   resolution: CameraResolution;
@@ -93,6 +100,9 @@ export interface SmashSenseState {
   dismissLandingCall: () => void;
 
   setCalibrationCorners: (corners: Point2D[], venueName?: string) => void;
+  setAutoDetectEnabled: (enabled: boolean) => void;
+  setAutoCourtState: (state: { status: 'SCANNING' | 'ACQUIRED' | 'LOCKED' | 'FALLBACK'; confidence: number; message: string; corners?: Point2D[] }) => void;
+  setIdentifiedPlayersCount: (count: number) => void;
   setLiveDetections: (players: TrackedPlayer[], shuttle: ShuttlecockTrack | null) => void;
   setFpsStats: (renderFps: number, inferenceFps: number, latencyMs: number) => void;
   setCameraSettings: (settings: { facingMode?: 'user' | 'environment'; resolution?: CameraResolution; selectedCameraId?: string }) => void;
@@ -172,6 +182,12 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   screenCorners: initialScreenCorners,
   courtToImageMatrix: initialCalibration.matrix,
   imageToCourtMatrix: initialCalibration.inverse,
+
+  isAutoDetectEnabled: true,
+  autoCourtStatus: 'SCANNING',
+  autoCourtConfidence: 0,
+  autoCourtMessage: 'Scanning for court...',
+  identifiedPlayersCount: 0,
 
   facingMode: 'environment',
   resolution: '720p',
@@ -361,6 +377,26 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
       activeVenueName: venueName || get().activeVenueName,
     });
   },
+
+  setAutoDetectEnabled: (enabled) => set({ isAutoDetectEnabled: enabled }),
+
+  setAutoCourtState: ({ status, confidence, message, corners }) => {
+    const updates: Partial<SmashSenseState> = {
+      autoCourtStatus: status,
+      autoCourtConfidence: confidence,
+      autoCourtMessage: message,
+    };
+    if (corners) {
+      const { matrix, inverse } = computeCourtCalibration(corners);
+      updates.screenCorners = corners;
+      updates.courtToImageMatrix = matrix;
+      updates.imageToCourtMatrix = inverse;
+      updates.isCalibrated = true;
+    }
+    set(updates);
+  },
+
+  setIdentifiedPlayersCount: (count) => set({ identifiedPlayersCount: count }),
 
   setLiveDetections: (players, shuttle) =>
     set({ trackedPlayers: players, shuttleTrack: shuttle }),

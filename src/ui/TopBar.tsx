@@ -29,6 +29,7 @@ import {
   HelpCircle,
   Command,
   ShieldCheck,
+  Scan,
 } from 'lucide-react';
 
 interface TopBarProps {
@@ -54,6 +55,8 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   const isCalibrationMode = useSmashSenseStore((s) => s.isCalibrationMode);
   const setCalibrationMode = useSmashSenseStore((s) => s.setCalibrationMode);
+  const isAutoDetectEnabled = useSmashSenseStore((s) => s.isAutoDetectEnabled);
+  const setAutoDetectEnabled = useSmashSenseStore((s) => s.setAutoDetectEnabled);
   const setSetupWizardOpen = useSmashSenseStore((s) => s.setSetupWizardOpen);
   const showMiniCourt = useSmashSenseStore((s) => s.showMiniCourt);
   const toggleMiniCourt = useSmashSenseStore((s) => s.toggleMiniCourt);
@@ -203,6 +206,23 @@ export const TopBar: React.FC<TopBarProps> = ({
           >
             <Crosshair size={15} />
             <span className="hidden xl:inline">Court</span>
+          </button>
+
+          {/* Auto-Detect AI Toggle */}
+          <button
+            onClick={() => {
+              triggerHaptic('light');
+              setAutoDetectEnabled(!isAutoDetectEnabled);
+            }}
+            className={`p-2 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
+              isAutoDetectEnabled
+                ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm'
+                : 'bg-white/5 text-slate-400 hover:bg-white/10 border border-white/10'
+            }`}
+            title={isAutoDetectEnabled ? 'Auto-Detect Active (Court & Players)' : 'Auto-Detect Paused'}
+          >
+            <Scan size={15} className={isAutoDetectEnabled ? 'animate-pulse' : ''} />
+            <span className="hidden xl:inline">Auto-AI</span>
           </button>
 
           {/* Mini Court Toggle */}

@@ -1,5 +1,6 @@
 import { Point2D } from '../court/courtGeometry';
 import { RawPlayerDetection } from '../tracking/byteTrack';
+import { AutoCourtDetectionResult } from '../court/autoCourtDetector';
 
 export interface FrameProcessingRequest {
   type: 'PROCESS_FRAME';
@@ -20,6 +21,7 @@ export interface FrameProcessingResponse {
     confidence: number;
   } | null;
   processingTimeMs: number;
+  detectedCourt?: AutoCourtDetectionResult;
 }
 
 export interface WorkerInitMessage {
@@ -27,5 +29,9 @@ export interface WorkerInitMessage {
   useSimulation?: boolean;
 }
 
-export type WorkerInMessage = FrameProcessingRequest | WorkerInitMessage;
+export interface WorkerResetAutoDetectMessage {
+  type: 'RESET_AUTO_DETECT';
+}
+
+export type WorkerInMessage = FrameProcessingRequest | WorkerInitMessage | WorkerResetAutoDetectMessage;
 export type WorkerOutMessage = FrameProcessingResponse | { type: 'READY' };

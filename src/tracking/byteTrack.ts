@@ -20,6 +20,7 @@ export interface RawPlayerDetection {
   score: number;
   keypoints?: Keypoint[];
   footPosition?: Point2D; // bottom center of bbox or ankle keypoints
+  jerseyColor?: { hex: string; name: string; isLight: boolean };
 }
 
 export type PlayerRole = 'A1' | 'A2' | 'B1' | 'B2';
@@ -38,6 +39,10 @@ export interface TrackedPlayer {
   totalHits: number;
   speedKmh?: number;
   movementTrail: Point2D[]; // recent court metric positions
+  jerseyColor?: { hex: string; name: string; isLight: boolean };
+  identificationStatus?: 'IDENTIFYING' | 'LOCKED' | 'TRACKING';
+  courtSide?: 'Near Court (Team B)' | 'Far Court (Team A)';
+  confidence?: number;
 }
 
 export function computeIoU(b1: BoundingBox, b2: BoundingBox): number {
@@ -93,6 +98,101 @@ export class MultiPlayerTracker {
 
   public getPlayerRole(trackId: number): PlayerRole | undefined {
     return this.assignedRoles.get(trackId);
+  }
+
+  /**
+   * Automatically identifies and assigns player roles based on court positions and match config
+   */
+  public autoIdentifyPlayers(config: {
+    format: 'singles' | 'doubles';
+    teamANames: { A1: string; A2?: string };
+    teamBNames: { B1: string; B2?: string };
+  }): void {
+    const active = Array.from(this.tracks.values())
+      .filter(item => item.track.state === 'tracked' || item.track.totalHits >= this.minHitsToConfirm)
+      .map(item => item.track);
+
+    if (active.length === 0) return;
+
+    // Separate players into Far Court (Team A: y < 6.70m) and Near Court (Team B: y >= 6.70m)
+    const farPlayers: TrackedPlayer[] = [];
+    const nearPlayers: TrackedPlayer[] = [];
+
+    for (const player of active) {
+      const courtY = player.courtPosition?.y;
+      const screenY = player.bbox.y + player.bbox.height;
+      const isFar = courtY !== undefined ? courtY < 6.70 : screenY < 380;
+      if (isFar) {
+        farPlayers.push(player);
+      } else {
+        nearPlayers.push(player);
+      }
+    }
+
+    // Sort by X coordinate for left/right pairing in doubles
+    farPlayers.sort((a, b) => (a.courtPosition?.x ?? a.bbox.x) - (b.courtPosition?.x ?? b.bbox.x));
+    nearPlayers.sort((a, b) => (a.courtPosition?.x ?? a.bbox.x) - (b.courtPosition?.x ?? b.bbox.x));
+
+    // Auto-assign Far Court players (Team A)
+    farPlayers.forEach((p, idx) => {
+      const role: PlayerRole = idx === 0 ? 'A1' : 'A2';
+      const name = idx === 0 ? config.teamANames.A1 : (config.teamANames.A2 || 'Partner A');
+      this.setPlayerRole(p.trackId, role, name);
+      p.courtSide = 'Far Court (Team A)';
+      p.identificationStatus = 'LOCKED';
+      p.confidence = 0.95;
+    });
+
+    // Auto-assign Near Court players (Team B)
+    nearPlayers.forEach((p, idx) => {
+      const role: PlayerRole = idx === 0 ? 'B1' : 'B2';
+      const name = idx === 0 ? config.teamBNames.B1 : (config.teamBNames.B2 || 'Partner B');
+      this.setPlayerRole(p.trackId, role, name);
+      p.courtSide = 'Near Court (Team B)';
+      p.identificationStatus = 'LOCKED';
+      p.confidence = 0.96;
+    });
+  }
+
+  /**
+   * Swap court sides for all assigned players (e.g. interval or game side-swap)
+   */
+  public swapSides(config: {
+    format: 'singles' | 'doubles';
+    teamANames: { A1: string; A2?: string };
+    teamBNames: { B1: string; B2?: string };
+  }): void {
+    const updatedRoles = new Map<number, PlayerRole>();
+    const updatedNames = new Map<PlayerRole, string>();
+
+    for (const [trackId, role] of this.assignedRoles) {
+      const isTeamA = role.startsWith('A');
+      const newRole: PlayerRole = isTeamA
+        ? (role === 'A1' ? 'B1' : 'B2')
+        : (role === 'B1' ? 'A1' : 'A2');
+
+      const newName = newRole === 'A1'
+        ? config.teamANames.A1
+        : newRole === 'A2'
+        ? (config.teamANames.A2 || 'Partner A')
+        : newRole === 'B1'
+        ? config.teamBNames.B1
+        : (config.teamBNames.B2 || 'Partner B');
+
+      updatedRoles.set(trackId, newRole);
+      updatedNames.set(newRole, newName);
+
+      const item = this.tracks.get(trackId);
+      if (item) {
+        item.track.assignedRole = newRole;
+        item.track.team = newRole.startsWith('A') ? 'A' : 'B';
+        item.track.customName = newName;
+        item.track.courtSide = newRole.startsWith('A') ? 'Far Court (Team A)' : 'Near Court (Team B)';
+      }
+    }
+
+    this.assignedRoles = updatedRoles;
+    this.assignedNames = updatedNames;
   }
 
   /**
@@ -222,6 +322,10 @@ export class MultiPlayerTracker {
     item.track.timeSinceUpdate = 0;
     item.track.totalHits++;
 
+    if (det.jerseyColor) {
+      item.track.jerseyColor = det.jerseyColor;
+    }
+
     if (item.track.totalHits >= this.minHitsToConfirm) {
       item.track.state = 'tracked';
     }
@@ -269,6 +373,7 @@ export class MultiPlayerTracker {
       score: det.score,
       keypoints: det.keypoints,
       courtPosition: det.footPosition,
+      jerseyColor: det.jerseyColor,
       state: 'tentative',
       timeSinceUpdate: 0,
       totalHits: 1,

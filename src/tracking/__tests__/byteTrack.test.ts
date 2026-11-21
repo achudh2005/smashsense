@@ -116,4 +116,50 @@ describe('MultiPlayerTracker ID Stability & Tracking', () => {
     expect(nextTracks[0].customName).toBe('Viktor Axelsen');
     expect(nextTracks[0].team).toBe('B');
   });
+
+  it('automatically identifies player roles and court side based on position', () => {
+    // Player 1 (Far court, y = 3.2m)
+    // Player 2 (Near court, y = 9.5m)
+    for (let f = 0; f < 3; f++) {
+      tracker.update([
+        {
+          bbox: { x: 300, y: 150, width: 60, height: 120 },
+          score: 0.9,
+          footPosition: { x: 2.5, y: 3.2 },
+        },
+        {
+          bbox: { x: 450, y: 500, width: 90, height: 180 },
+          score: 0.92,
+          footPosition: { x: 3.5, y: 9.5 },
+        },
+      ]);
+    }
+
+    const config = {
+      format: 'singles' as const,
+      teamANames: { A1: 'Viktor Axelsen' },
+      teamBNames: { B1: 'Lee Zii Jia' },
+    };
+
+    tracker.autoIdentifyPlayers(config);
+
+    const activeTracks = tracker.update([]);
+    expect(activeTracks.length).toBe(2);
+
+    const farPlayer = activeTracks.find(p => p.courtPosition && p.courtPosition.y < 6.7);
+    const nearPlayer = activeTracks.find(p => p.courtPosition && p.courtPosition.y >= 6.7);
+
+    expect(farPlayer?.assignedRole).toBe('A1');
+    expect(farPlayer?.customName).toBe('Viktor Axelsen');
+    expect(farPlayer?.courtSide).toBe('Far Court (Team A)');
+
+    expect(nearPlayer?.assignedRole).toBe('B1');
+    expect(nearPlayer?.customName).toBe('Lee Zii Jia');
+    expect(nearPlayer?.courtSide).toBe('Near Court (Team B)');
+
+    // Test swap sides
+    tracker.swapSides(config);
+    expect(farPlayer?.assignedRole).toBe('B1');
+    expect(nearPlayer?.assignedRole).toBe('A1');
+  });
 });

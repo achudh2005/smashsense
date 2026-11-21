@@ -23,12 +23,14 @@ import { ReviewFlaggedCallsModal } from './ReviewFlaggedCallsModal';
 import { PlayerProfilesModal } from './PlayerProfilesModal';
 import { PrivacyModal } from './PrivacyModal';
 import { OnboardingTutorial } from './OnboardingTutorial';
+import { AutoDetectionHUD } from './AutoDetectionHUD';
 import { trainingManager } from '../training/trainingManager';
 import { playerProfileService } from '../history/playerProfileService';
 import { calculateMatchAnalysis } from '../stats/matchStatsCalculator';
 import { CameraOff, Sparkles } from 'lucide-react';
 import { WorkerInMessage, WorkerOutMessage } from '../detection/types';
 import { db } from '../storage/db';
+import { haptics } from '../utils/haptics';
 
 export const LiveCameraView: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -169,6 +171,30 @@ export const LiveCameraView: React.FC = () => {
         // Update Multi-player tracker
         const tracked = trackerRef.current.update(mappedPlayers);
 
+        // Auto-identify players based on court position and match config
+        if (useSmashSenseStore.getState().isAutoDetectEnabled) {
+          trackerRef.current.autoIdentifyPlayers(configRef.current);
+          const identifiedCount = tracked.filter(t => t.assignedRole || t.identificationStatus === 'LOCKED').length;
+          useSmashSenseStore.getState().setIdentifiedPlayersCount(identifiedCount);
+        }
+
+        // Handle Auto Court Detection telemetry from worker
+        if (msg.detectedCourt && useSmashSenseStore.getState().isAutoDetectEnabled) {
+          const currentStatus = useSmashSenseStore.getState().autoCourtStatus;
+          const isNewlyLocked = msg.detectedCourt.isLocked && currentStatus !== 'LOCKED';
+
+          useSmashSenseStore.getState().setAutoCourtState({
+            status: msg.detectedCourt.status,
+            confidence: msg.detectedCourt.confidence,
+            message: msg.detectedCourt.message,
+            corners: isNewlyLocked ? msg.detectedCourt.corners : undefined,
+          });
+
+          if (isNewlyLocked) {
+            haptics.success();
+          }
+        }
+
         // Map shuttlecock candidate to court
         let shuttleCourtPos = null;
         if (msg.shuttlecock) {
@@ -292,6 +318,29 @@ export const LiveCameraView: React.FC = () => {
               fillCourt: true,
               courtFillColor: 'rgba(21, 128, 61, 0.12)',
             });
+
+            // If auto-detect is scanning court, draw dynamic futuristic laser sweep
+            const autoCourtStatus = useSmashSenseStore.getState().autoCourtStatus;
+            if (autoCourtStatus === 'SCANNING' && screenCorners.length === 4) {
+              const scanPhase = (now % 1600) / 1600; // 0 to 1
+              const [tl, tr, br, bl] = screenCorners;
+
+              const leftX = tl.x + (bl.x - tl.x) * scanPhase;
+              const leftY = tl.y + (bl.y - tl.y) * scanPhase;
+              const rightX = tr.x + (br.x - tr.x) * scanPhase;
+              const rightY = tr.y + (br.y - tr.y) * scanPhase;
+
+              ctx.save();
+              ctx.beginPath();
+              ctx.moveTo(leftX, leftY);
+              ctx.lineTo(rightX, rightY);
+              ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+              ctx.lineWidth = 2.5;
+              ctx.shadowColor = '#38bdf8';
+              ctx.shadowBlur = 10;
+              ctx.stroke();
+              ctx.restore();
+            }
           }
 
           // 2. Draw Calibration Pins if in calibration mode
@@ -299,46 +348,110 @@ export const LiveCameraView: React.FC = () => {
             drawCalibrationPins(ctx, screenCorners);
           }
 
-          // 3. Draw Tracked Players
+          // 3. Draw Tracked Players with Broadcast Computer Vision Styling
           const tracked = useSmashSenseStore.getState().trackedPlayers;
           for (const player of tracked) {
             const isTeamA = player.team === 'A';
-            const color = isTeamA ? '#38bdf8' : '#f97316';
+            const teamColor = isTeamA ? '#38bdf8' : '#f97316';
+            const jerseyHex = player.jerseyColor?.hex || teamColor;
             const { x, y, width, height } = player.bbox;
 
-            // Player Bounding Box
             ctx.save();
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
-            ctx.strokeRect(x, y, width, height);
 
-            // Header Pill
-            const role = player.assignedRole || (isTeamA ? 'Team A' : 'Team B');
-            const speedText = player.speedKmh ? ` • ${Math.round(player.speedKmh)} km/h` : '';
-            const labelText = `${role}${speedText}`;
-
-            ctx.font = 'bold 12px ui-monospace, monospace';
-            const textW = ctx.measureText(labelText).width;
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            // (a) Ground contact footprint anchor (perspective oval)
+            const footX = x + width / 2;
+            const footY = y + height;
             ctx.beginPath();
-            ctx.roundRect(x, y - 22, textW + 16, 20, 5);
+            ctx.ellipse(footX, footY, width * 0.35, 7, 0, 0, Math.PI * 2);
+            ctx.fillStyle = isTeamA ? 'rgba(56, 189, 248, 0.22)' : 'rgba(249, 115, 22, 0.22)';
             ctx.fill();
-            ctx.strokeStyle = color;
+            ctx.strokeStyle = teamColor;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // (b) Subtle translucent inner fill
+            ctx.fillStyle = isTeamA ? 'rgba(56, 189, 248, 0.04)' : 'rgba(249, 115, 22, 0.04)';
+            ctx.fillRect(x, y, width, height);
+
+            // (c) High-tech broadcast corner reticles
+            const reticleLen = Math.max(10, Math.min(20, Math.min(width, height) * 0.22));
+            ctx.strokeStyle = teamColor;
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Top-Left
+            ctx.beginPath();
+            ctx.moveTo(x, y + reticleLen);
+            ctx.lineTo(x, y);
+            ctx.lineTo(x + reticleLen, y);
+            ctx.stroke();
+
+            // Top-Right
+            ctx.beginPath();
+            ctx.moveTo(x + width - reticleLen, y);
+            ctx.lineTo(x + width, y);
+            ctx.lineTo(x + width, y + reticleLen);
+            ctx.stroke();
+
+            // Bottom-Right
+            ctx.beginPath();
+            ctx.moveTo(x + width, y + height - reticleLen);
+            ctx.lineTo(x + width, y + height);
+            ctx.lineTo(x + width - reticleLen, y + height);
+            ctx.stroke();
+
+            // Bottom-Left
+            ctx.beginPath();
+            ctx.moveTo(x + reticleLen, y + height);
+            ctx.lineTo(x, y + height);
+            ctx.lineTo(x, y + height - reticleLen);
+            ctx.stroke();
+
+            // (d) Professional Header Pill Badge
+            const role = player.assignedRole || (isTeamA ? 'A1' : 'B1');
+            const playerName = player.customName ? ` ${player.customName}` : '';
+            const speedText = player.speedKmh ? ` • ${Math.round(player.speedKmh)} km/h` : '';
+            const badgeText = `${role}${playerName}${speedText}`;
+
+            ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace';
+            const textW = ctx.measureText(badgeText).width;
+            const pillW = textW + 28;
+            const pillH = 22;
+            const pillX = x;
+            const pillY = y - pillH - 4;
+
+            // Background glass card
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+            ctx.beginPath();
+            ctx.roundRect(pillX, pillY, pillW, pillH, 6);
+            ctx.fill();
+            ctx.strokeStyle = teamColor;
             ctx.lineWidth = 1;
             ctx.stroke();
 
-            ctx.fillStyle = color;
-            ctx.fillText(labelText, x + 8, y - 8);
+            // Jersey Color Swatch Dot
+            ctx.beginPath();
+            ctx.arc(pillX + 10, pillY + pillH / 2, 4, 0, Math.PI * 2);
+            ctx.fillStyle = jerseyHex;
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
 
-            // Skeleton Keypoints
+            // Player Name & Role Text
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillText(badgeText, pillX + 20, pillY + 15);
+
+            // (e) Keypoint Skeleton
             if (showSkeleton && player.keypoints) {
               for (const kp of player.keypoints) {
                 if (kp.score > 0.5) {
                   ctx.beginPath();
-                  ctx.arc(kp.x, kp.y, 3.5, 0, Math.PI * 2);
+                  ctx.arc(kp.x, kp.y, 3, 0, Math.PI * 2);
                   ctx.fillStyle = '#ffffff';
                   ctx.fill();
-                  ctx.strokeStyle = color;
+                  ctx.strokeStyle = teamColor;
                   ctx.lineWidth = 1.5;
                   ctx.stroke();
                 }
@@ -450,6 +563,26 @@ export const LiveCameraView: React.FC = () => {
     }
   };
 
+  const handleReScan = useCallback(() => {
+    if (workerRef.current) {
+      workerRef.current.postMessage({ type: 'RESET_AUTO_DETECT' });
+    }
+    trackerRef.current.reset();
+    useSmashSenseStore.getState().setAutoCourtState({
+      status: 'SCANNING',
+      confidence: 0,
+      message: 'Scanning court & players...',
+    });
+    haptics.medium();
+  }, []);
+
+  const handleSwapSides = useCallback(() => {
+    trackerRef.current.swapSides(configRef.current);
+    const updated = trackerRef.current.update([]);
+    useSmashSenseStore.getState().setLiveDetections(updated, useSmashSenseStore.getState().shuttleTrack);
+    haptics.light();
+  }, []);
+
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden flex flex-col">
       {/* Top Bar HUD */}
@@ -479,6 +612,13 @@ export const LiveCameraView: React.FC = () => {
           width={videoDims.width}
           height={videoDims.height}
           className="absolute w-full h-full object-contain pointer-events-none"
+        />
+
+        {/* Auto-Detection Status & Intelligence HUD */}
+        <AutoDetectionHUD
+          onReScan={handleReScan}
+          onFineTune={() => setCalibrationMode(true)}
+          onSwapSides={handleSwapSides}
         />
 
         {/* Interactive Calibration Overlay Layer */}

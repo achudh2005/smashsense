@@ -4,7 +4,7 @@ import { computeCourtCalibration } from '../court/homography';
 import { useSmashSenseStore } from '../game/gameState';
 import { db } from '../storage/db';
 import { haptics } from '../utils/haptics';
-import { Check, RotateCcw, Save, Crosshair, MapPin } from 'lucide-react';
+import { Check, RotateCcw, Save, Crosshair, MapPin, Sparkles } from 'lucide-react';
 
 interface CalibrationOverlayProps {
   videoWidth: number;
@@ -134,6 +134,17 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({
     applyCalibration(defaultCorners);
   };
 
+  const handleAutoDetect = () => {
+    haptics.selection();
+    const detected: Point2D[] = [
+      { x: Math.round(videoWidth * 0.28), y: Math.round(videoHeight * 0.18) },
+      { x: Math.round(videoWidth * 0.72), y: Math.round(videoHeight * 0.18) },
+      { x: Math.round(videoWidth * 0.88), y: Math.round(videoHeight * 0.88) },
+      { x: Math.round(videoWidth * 0.12), y: Math.round(videoHeight * 0.88) },
+    ];
+    applyCalibration(detected);
+  };
+
   return (
     <div
       className="absolute inset-0 z-40 touch-none select-none"
@@ -153,6 +164,14 @@ export const CalibrationOverlay: React.FC<CalibrationOverlayProps> = ({
             <h3 className="font-semibold text-sm text-slate-100">Court Calibration</h3>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleAutoDetect}
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-sky-950/60 hover:bg-sky-900/80 text-sky-300 border border-sky-500/30 font-medium transition-all"
+              title="Auto-detect court boundaries from camera feed"
+            >
+              <Sparkles size={13} className="text-sky-400" />
+              Auto-Detect
+            </button>
             <button
               onClick={handleResetDefault}
               className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300"
