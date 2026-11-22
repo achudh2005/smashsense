@@ -32,6 +32,7 @@ import {
   Scan,
   Sparkles,
   Radio,
+  Eye,
 } from 'lucide-react';
 
 interface TopBarProps {
@@ -77,6 +78,10 @@ export const TopBar: React.FC<TopBarProps> = ({
   const toggleTacticalCoach = useSmashSenseStore((s) => s.toggleTacticalCoach);
   const isRemoteClickerSettingsOpen = useSmashSenseStore((s) => s.isRemoteClickerSettingsOpen);
   const toggleRemoteClickerSettings = useSmashSenseStore((s) => s.toggleRemoteClickerSettings);
+  const isHawkEyeReplayOpen = useSmashSenseStore((s) => s.isHawkEyeReplayOpen);
+  const setHawkEyeReplayOpen = useSmashSenseStore((s) => s.setHawkEyeReplayOpen);
+  const isBiomechanicsModalOpen = useSmashSenseStore((s) => s.isBiomechanicsModalOpen);
+  const setBiomechanicsModalOpen = useSmashSenseStore((s) => s.setBiomechanicsModalOpen);
   const isLowPowerMode = useSmashSenseStore((s) => s.isLowPowerMode);
   const toggleLowPowerMode = useSmashSenseStore((s) => s.toggleLowPowerMode);
   const language = useSmashSenseStore((s) => s.language);
@@ -263,6 +268,40 @@ export const TopBar: React.FC<TopBarProps> = ({
           >
             <Radio size={15} className={isRemoteClickerSettingsOpen ? 'text-white' : 'text-emerald-400'} />
             <span className="hidden xl:inline">Sensors</span>
+          </button>
+
+          {/* 3D Hawk-Eye Replay */}
+          <button
+            onClick={() => {
+              triggerHaptic('medium');
+              setHawkEyeReplayOpen(!isHawkEyeReplayOpen);
+            }}
+            className={`p-2 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
+              isHawkEyeReplayOpen
+                ? 'bg-amber-600 text-white shadow-sm ring-1 ring-amber-400'
+                : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
+            }`}
+            title="3D Hawk-Eye Line Call Replay"
+          >
+            <Eye size={15} className={isHawkEyeReplayOpen ? 'text-white' : 'text-amber-400'} />
+            <span className="hidden xl:inline">Hawk-Eye</span>
+          </button>
+
+          {/* Biomechanics Analyzer */}
+          <button
+            onClick={() => {
+              triggerHaptic('light');
+              setBiomechanicsModalOpen(!isBiomechanicsModalOpen);
+            }}
+            className={`p-2 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
+              isBiomechanicsModalOpen
+                ? 'bg-sky-600 text-white shadow-sm ring-1 ring-sky-400'
+                : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
+            }`}
+            title="Smash Biomechanics & Kinematics"
+          >
+            <Activity size={15} className={isBiomechanicsModalOpen ? 'text-white' : 'text-sky-400'} />
+            <span className="hidden xl:inline">Biomech</span>
           </button>
 
           {/* Mini Court Toggle */}

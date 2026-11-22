@@ -81,7 +81,24 @@ SmashSense adheres to Apple Human Interface Guidelines with a design focused on 
   - Interactive "Learn Key" customization modal allowing one-click binding to any wireless clicker.
   - Non-intrusive synthesized Web Audio feedback tones and physical haptics for blind tactile confirmation.
 
-### 7. Tactical Analytics & Post-Match Intelligence
+### 7. Broadcast & Visual Replay (Phase 3)
+- **Virtual 3D Hawk-Eye Line Call Replay**:
+  - Full-screen animated 3D recreation of close boundary calls on demand or automatically triggered on contentious calls (confidence < 70% or margin $\le 18$ mm).
+  - High-resolution HTML5 Canvas rendering of BWF court surface, zoomed boundary lines (40mm scale), 3D parabolic shuttle descent flight path, cork base impact compression oval, and realistic chalk dust particle burst.
+  - Broadcast presentation banner with exact millimeter distance: e.g. **"IN (by 8 mm)"** or **"OUT (by 14 mm)"**.
+- **Olympic-Style Broadcast Lower-Thirds & TV Graphics**:
+  - Glassmorphic animated lower-third TV overlays that slide in/out during live match play:
+    - *Top Smash Speed*: "🏸 TOP SMASH: 382 KM/H • Viktor Axelsen"
+    - *Rally of the Match*: "🔥 RALLY OF THE MATCH: 44 SHOTS (48s)"
+    - *Game Point & Match Point*: High-contrast golden championship alerts.
+    - *Interval Lead*: Mid-game intermission score updates.
+  - Configurable toggle in store and auto-dismissing 4.2-second display timer.
+- **Slow-Motion Smash Biomechanics Analyzer**:
+  - In-memory 90-frame rolling keypoint buffer (3.0 seconds at 30 fps) capturing the full takeoff, apex reach, contact, and landing sequence.
+  - Kinematic metrics: Jump clearance (cm), contact height relative to floor (meters), arm extension angle (target 165° – 180°), and rotational pronation velocity (°/sec).
+  - Interactive scrubbable player with skeleton stick figure, joint angle arcs, and variable slow-mo speeds (0.25x, 0.5x, 1.0x).
+
+### 8. Tactical Analytics & Post-Match Intelligence
 - **Comprehensive Match Reports**: Points won/lost, conversion rates, forced vs. unforced error ratios, and clutch scoring at 18-18.
 - **2D Court Heatmaps**: Player position densities, shuttle landing distributions, smash directions, and error clusters.
 - **Movement Analytics**: Distance covered (meters), sprint speeds, court coverage percentage, and speed-drop fatigue indicators.

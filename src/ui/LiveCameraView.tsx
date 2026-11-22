@@ -26,6 +26,10 @@ import { OnboardingTutorial } from './OnboardingTutorial';
 import { AutoDetectionHUD } from './AutoDetectionHUD';
 import { TacticalCoachCard } from './TacticalCoachCard';
 import { RemoteClickerSettingsModal } from './RemoteClickerSettingsModal';
+import { HawkEyeReplayModal } from './HawkEyeReplayModal';
+import { BroadcastGraphicsOverlay } from './BroadcastGraphicsOverlay';
+import { BiomechanicsModal } from './BiomechanicsModal';
+import { poseFrameRollingBuffer } from '../detection/biomechanicsAnalyzer';
 import { remoteClickerService } from '../sensors/remoteClickerService';
 import { generateTacticalAdvice } from '../tactical/tacticalSuggestionEngine';
 import { calculateWinProbability } from '../tactical/winProbabilityEngine';
@@ -109,6 +113,14 @@ export const LiveCameraView: React.FC = () => {
   const setTacticalCoachOpen = useSmashSenseStore((s) => s.setTacticalCoachOpen);
   const isRemoteClickerSettingsOpen = useSmashSenseStore((s) => s.isRemoteClickerSettingsOpen);
   const setRemoteClickerSettingsOpen = useSmashSenseStore((s) => s.setRemoteClickerSettingsOpen);
+  const isHawkEyeReplayOpen = useSmashSenseStore((s) => s.isHawkEyeReplayOpen);
+  const hawkEyeReplayData = useSmashSenseStore((s) => s.hawkEyeReplayData);
+  const setHawkEyeReplayOpen = useSmashSenseStore((s) => s.setHawkEyeReplayOpen);
+  const isBiomechanicsModalOpen = useSmashSenseStore((s) => s.isBiomechanicsModalOpen);
+  const biomechanicsReport = useSmashSenseStore((s) => s.biomechanicsReport);
+  const setBiomechanicsModalOpen = useSmashSenseStore((s) => s.setBiomechanicsModalOpen);
+  const activeBroadcastGraphic = useSmashSenseStore((s) => s.activeBroadcastGraphic);
+  const setBroadcastGraphic = useSmashSenseStore((s) => s.setBroadcastGraphic);
   const toggleFlaggedCallsModal = useSmashSenseStore((s) => s.toggleFlaggedCallsModal);
   const toggleTrainingModal = useSmashSenseStore((s) => s.toggleTrainingModal);
 
@@ -227,6 +239,11 @@ export const LiveCameraView: React.FC = () => {
 
         // Update Multi-player tracker
         const tracked = trackerRef.current.update(mappedPlayers);
+
+        // Phase 3: Rolling Buffer of Pose Keypoints for Smash Biomechanics
+        if (msg.players.length > 0 && msg.players[0].keypoints) {
+          poseFrameRollingBuffer.pushFrame(msg.players[0].keypoints, 'A1');
+        }
 
         // Auto-identify players based on court position and match config
         if (useSmashSenseStore.getState().isAutoDetectEnabled) {
@@ -840,6 +857,26 @@ export const LiveCameraView: React.FC = () => {
       <RemoteClickerSettingsModal
         isOpen={isRemoteClickerSettingsOpen}
         onClose={() => setRemoteClickerSettingsOpen(false)}
+      />
+
+      {/* Olympic-Style Broadcast Lower-Thirds Overlay */}
+      <BroadcastGraphicsOverlay
+        currentGraphic={activeBroadcastGraphic}
+        onDismiss={() => setBroadcastGraphic(null)}
+      />
+
+      {/* Virtual 3D Hawk-Eye Replay Modal */}
+      <HawkEyeReplayModal
+        isOpen={isHawkEyeReplayOpen}
+        onClose={() => setHawkEyeReplayOpen(false)}
+        replayData={hawkEyeReplayData}
+      />
+
+      {/* Slow-Motion Smash Biomechanics Modal */}
+      <BiomechanicsModal
+        isOpen={isBiomechanicsModalOpen}
+        onClose={() => setBiomechanicsModalOpen(false)}
+        report={biomechanicsReport}
       />
 
       {/* Interactive Quickstart Onboarding Tour */}

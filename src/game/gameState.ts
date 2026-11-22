@@ -13,6 +13,9 @@ import { speechService } from '../voice/speechService';
 import { Language } from '../i18n/translations';
 import { DetailedMatchEvent, createDetailedMatchEvent } from '../tactical/matchEventModel';
 import { isCoachIntervalTrigger } from '../tactical/tacticalSuggestionEngine';
+import { HawkEyeReplayData, constructHawkEyeReplayData } from '../replay/virtualHawkEyeReplay';
+import { BroadcastGraphicItem } from '../ui/BroadcastGraphicsOverlay';
+import { BiomechanicsReport, analyzeSmashKinematics, poseFrameRollingBuffer } from '../detection/biomechanicsAnalyzer';
 import { db } from '../storage/db';
 
 export interface MatchConfig {
@@ -93,6 +96,12 @@ export interface SmashSenseState {
   isOnboardingOpen: boolean;
   isTacticalCoachOpen: boolean;
   isRemoteClickerSettingsOpen: boolean;
+  isHawkEyeReplayOpen: boolean;
+  hawkEyeReplayData: HawkEyeReplayData | null;
+  isBiomechanicsModalOpen: boolean;
+  biomechanicsReport: BiomechanicsReport | null;
+  activeBroadcastGraphic: BroadcastGraphicItem | null;
+  showBroadcastOverlays: boolean;
   isLowPowerMode: boolean;
   language: Language;
 
@@ -128,6 +137,12 @@ export interface SmashSenseState {
   toggleTacticalCoach: () => void;
   setRemoteClickerSettingsOpen: (open: boolean) => void;
   toggleRemoteClickerSettings: () => void;
+  setHawkEyeReplayOpen: (open: boolean) => void;
+  triggerHawkEyeReplay: (data: HawkEyeReplayData) => void;
+  setBiomechanicsModalOpen: (open: boolean) => void;
+  triggerBiomechanicsReport: (report: BiomechanicsReport) => void;
+  setBroadcastGraphic: (graphic: BroadcastGraphicItem | null) => void;
+  setShowBroadcastOverlays: (show: boolean) => void;
   setLowPowerMode: (low: boolean) => void;
   setLanguage: (lang: Language) => void;
   toggleStatsModal: () => void;
@@ -229,6 +244,12 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   isOnboardingOpen: false,
   isTacticalCoachOpen: false,
   isRemoteClickerSettingsOpen: false,
+  isHawkEyeReplayOpen: false,
+  hawkEyeReplayData: null,
+  isBiomechanicsModalOpen: false,
+  biomechanicsReport: null,
+  activeBroadcastGraphic: null,
+  showBroadcastOverlays: true,
   isLowPowerMode: false,
   language: 'en',
 
@@ -364,6 +385,59 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
 
     const isIntervalTrigger = isCoachIntervalTrigger(snap);
 
+    // Phase 3: Construct Hawk-Eye Line Review Data
+    const hawkEyeData = constructHawkEyeReplayData(
+      rally.lineCall,
+      rally.maxSpeedKmh,
+      config.format === 'doubles'
+    );
+    const shouldAutoHawkEye = rally.lineCall.confidencePercent < 70 || hawkEyeData.marginMm <= 18;
+
+    // Phase 3: Evaluate Olympic-Style Broadcast Graphics
+    let broadcastGraphic: BroadcastGraphicItem | null = null;
+    if (isMatchPt) {
+      const leader = snap.scoreA >= 20 ? config.teamANames.A1 : config.teamBNames.B1;
+      broadcastGraphic = {
+        id: `bg_${Date.now()}`,
+        type: 'MATCH_POINT',
+        title: 'CHAMPIONSHIP MATCH POINT',
+        subtitle: `${leader} serving for the match`,
+        value: `${snap.scoreA} - ${snap.scoreB}`,
+      };
+    } else if (isGamePt) {
+      const leader = snap.scoreA >= 20 ? config.teamANames.A1 : config.teamBNames.B1;
+      broadcastGraphic = {
+        id: `bg_${Date.now()}`,
+        type: 'GAME_POINT',
+        title: 'GAME POINT',
+        subtitle: `${leader} on game point`,
+        value: `${snap.scoreA} - ${snap.scoreB}`,
+      };
+    } else if (rally.maxSpeedKmh >= 210) {
+      broadcastGraphic = {
+        id: `bg_${Date.now()}`,
+        type: 'SMASH_SPEED',
+        title: 'TELEMETRY • TOP SMASH',
+        subtitle: `Struck by ${playerNamesMap[rally.creditedPlayer] || 'Player'}`,
+        value: `${Math.round(rally.maxSpeedKmh)} KM/H`,
+      };
+    } else if (rally.shotCount >= 16) {
+      broadcastGraphic = {
+        id: `bg_${Date.now()}`,
+        type: 'RALLY_OF_MATCH',
+        title: 'INTENSE RALLY',
+        subtitle: `Duration: ${Math.round(rally.durationSeconds)}s`,
+        value: `${rally.shotCount} SHOTS`,
+      };
+    }
+
+    // Phase 3: Analyze smash biomechanics if stroke was smash
+    let bioReport: BiomechanicsReport | null = null;
+    if (rally.endingStroke === 'smash' || rally.endingStroke === 'jump_smash') {
+      const frames = poseFrameRollingBuffer.getSnapshot();
+      bioReport = analyzeSmashKinematics(frames, rally.endingStroke);
+    }
+
     set((state) => ({
       snapshot: snap,
       auditLog: engine.getAuditLog(),
@@ -372,6 +446,10 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
       allPlayerActions: [...state.allPlayerActions, ...rally.actions],
       detailedMatchEvents: [...state.detailedMatchEvents, detailedEvent],
       isTacticalCoachOpen: isIntervalTrigger ? true : state.isTacticalCoachOpen,
+      hawkEyeReplayData: hawkEyeData,
+      isHawkEyeReplayOpen: shouldAutoHawkEye ? true : state.isHawkEyeReplayOpen,
+      activeBroadcastGraphic: state.showBroadcastOverlays && broadcastGraphic ? broadcastGraphic : state.activeBroadcastGraphic,
+      biomechanicsReport: bioReport || state.biomechanicsReport,
       activeLandingCall: {
         call: rally.lineCall,
         pointType: rally.pointType,
@@ -465,6 +543,18 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   setRemoteClickerSettingsOpen: (open) => set({ isRemoteClickerSettingsOpen: open }),
 
   toggleRemoteClickerSettings: () => set((state) => ({ isRemoteClickerSettingsOpen: !state.isRemoteClickerSettingsOpen })),
+
+  setHawkEyeReplayOpen: (open) => set({ isHawkEyeReplayOpen: open }),
+
+  triggerHawkEyeReplay: (data) => set({ hawkEyeReplayData: data, isHawkEyeReplayOpen: true }),
+
+  setBiomechanicsModalOpen: (open) => set({ isBiomechanicsModalOpen: open }),
+
+  triggerBiomechanicsReport: (report) => set({ biomechanicsReport: report, isBiomechanicsModalOpen: true }),
+
+  setBroadcastGraphic: (graphic) => set({ activeBroadcastGraphic: graphic }),
+
+  setShowBroadcastOverlays: (show) => set({ showBroadcastOverlays: show }),
 
   setLowPowerMode: (low) => set({ isLowPowerMode: low }),
 
