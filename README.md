@@ -2,7 +2,7 @@
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-smashsense.54.79.20.200.sslip.io-brightgreen?style=for-the-badge&logo=nginx)](https://smashsense.54.79.20.200.sslip.io)
 [![CI](https://github.com/achudh2005/smashsense/actions/workflows/ci.yml/badge.svg)](https://github.com/achudh2005/smashsense/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-v1.2.0-blue?style=flat-square)](https://github.com/achudh2005/smashsense/releases/tag/v1.2.0)
+[![Version](https://img.shields.io/badge/version-v1.3.0-blue?style=flat-square)](https://github.com/achudh2005/smashsense/releases/tag/v1.3.0)
 
 > **LIVE Badminton Match Analyzer & Tactical Intelligence** running 100% client-side in the browser on desktop and mobile.
 
@@ -204,18 +204,25 @@ npm run build
 ```
 smashsense/
 ├── src/
+│   ├── audio/           # Real-time Web Audio API FFT acoustic hit & net-cord detector
 │   ├── camera/          # getUserMedia, wake lock, resolution selector, fps meter
 │   ├── court/           # Homography, BWF court geometry, line calling, accuracy review
-│   ├── detection/       # Web Worker inference bridge, adaptive frame skipper
-│   ├── tracking/        # ByteTrack player tracker, Kalman shuttlecock trajectory tracker
-│   ├── game/            # BWF scoring state machine, rally state machine, audit log
-│   ├── training/        # Solo drill routines, target zone hit evaluator, cadence tracker
-│   ├── voice/           # Speech synthesis announcements & speech recognition commands
-│   ├── stats/           # Match analytics calculator, heatmaps, coaching engine, exports
 │   ├── design/          # Apple HIG design tokens (typography, materials, spacing, colors)
+│   ├── detection/       # Web Worker inference, biomechanics analyzer, adaptive frame skipper
+│   ├── export/          # 9:16 vertical 1080x1920 Instagram Story / Poster canvas generator
+│   ├── game/            # BWF scoring state machine, rally state machine, audit log
+│   ├── replay/          # 3D Virtual Hawk-Eye line call particle recreation engine
+│   ├── sensors/         # Bluetooth remote clicker & wearable event mapping service
+│   ├── stats/           # Match analytics calculator, heatmaps, coaching engine, exports
 │   ├── storage/         # IndexedDB schema (Dexie.js)
+│   ├── sync/            # Zero-server WebRTC P2P multi-camera consensus & sync
+│   ├── tactical/        # Real-time win probability gauge, in-game tactical coach engine
+│   ├── tournament/      # Single-elimination & round-robin bracket management
+│   ├── tracking/        # ByteTrack player tracker, Kalman shuttlecock trajectory tracker
+│   ├── training/        # Solo drill routines, target zone hit evaluator, cadence tracker
+│   ├── ui/              # Apple-grade components (HUD, TopBar, UmpireTablet, Modals)
 │   ├── utils/           # Web Vibration API physical haptics engine
-│   └── ui/              # Apple-grade components (HUD, TopBar, MobileBottomBar, Modals)
+│   └── voice/           # Speech synthesis announcements & speech recognition commands
 ```
 
 ---
