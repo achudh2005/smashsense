@@ -31,6 +31,7 @@ import {
   ShieldCheck,
   Scan,
   Sparkles,
+  Radio,
 } from 'lucide-react';
 
 interface TopBarProps {
@@ -74,6 +75,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   const setOnboardingOpen = useSmashSenseStore((s) => s.setOnboardingOpen);
   const isTacticalCoachOpen = useSmashSenseStore((s) => s.isTacticalCoachOpen);
   const toggleTacticalCoach = useSmashSenseStore((s) => s.toggleTacticalCoach);
+  const isRemoteClickerSettingsOpen = useSmashSenseStore((s) => s.isRemoteClickerSettingsOpen);
+  const toggleRemoteClickerSettings = useSmashSenseStore((s) => s.toggleRemoteClickerSettings);
   const isLowPowerMode = useSmashSenseStore((s) => s.isLowPowerMode);
   const toggleLowPowerMode = useSmashSenseStore((s) => s.toggleLowPowerMode);
   const language = useSmashSenseStore((s) => s.language);
@@ -243,6 +246,23 @@ export const TopBar: React.FC<TopBarProps> = ({
           >
             <Sparkles size={15} className={isTacticalCoachOpen ? 'text-amber-300' : 'text-purple-400'} />
             <span className="hidden xl:inline">Coach</span>
+          </button>
+
+          {/* Smart Sensors & Remote Clicker */}
+          <button
+            onClick={() => {
+              triggerHaptic('light');
+              toggleRemoteClickerSettings();
+            }}
+            className={`p-2 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
+              isRemoteClickerSettingsOpen
+                ? 'bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-400'
+                : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
+            }`}
+            title="Bluetooth Remote & Acoustic Sensor Settings"
+          >
+            <Radio size={15} className={isRemoteClickerSettingsOpen ? 'text-white' : 'text-emerald-400'} />
+            <span className="hidden xl:inline">Sensors</span>
           </button>
 
           {/* Mini Court Toggle */}

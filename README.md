@@ -69,7 +69,19 @@ SmashSense adheres to Apple Human Interface Guidelines with a design focused on 
 - **Real-Time Win Probability & Momentum Gauge**: Dynamic win probability model calibrated for 21-point BWF scoring with real-time momentum index (-100 to +100), visual sparkline trend, and fatigue estimation based on sprint speed degradation.
 - **Coach HUD**: Interactive glassmorphic tactical coach card overlay during live camera matches with toggle button and automatic intermission popups.
 
-### 6. Tactical Analytics & Post-Match Intelligence
+### 6. Smart Sensor & Audio Intelligence (Phase 2)
+- **Acoustic Net Strike & Shuttle Hit Detection**:
+  - Web Audio API real-time Fast Fourier Transform (FFT) frequency spectrum analysis.
+  - Distinguishes high-frequency shuttlecock impact pops (3.5 kHz – 7.0 kHz transient) from net-cord tape scrapes (800 Hz – 2.5 kHz resonant).
+  - Audio-Vision Fusion: Corroborates visual shuttle landing candidates occurring within $\pm 120$ ms of an acoustic transient peak, boosting line call certainty (+15-18%) and automatically flagging net-cord shots.
+  - Configurable sensitivity threshold (10% to 100%) with graceful microphone permission fallback.
+- **Bluetooth Remote Clicker & Wearable Controls**:
+  - Full hands-free remote match operation using standard Bluetooth presentation remotes (PageUp/PageDown, Space, B/Blackout, Enter, MediaKeys) and volume buttons.
+  - Mapped actions: Point Team A (+1), Point Team B (+1), Undo Last Point, Challenge / Flag Call (Hawk-Eye review), and Start/Stop Training Drill.
+  - Interactive "Learn Key" customization modal allowing one-click binding to any wireless clicker.
+  - Non-intrusive synthesized Web Audio feedback tones and physical haptics for blind tactile confirmation.
+
+### 7. Tactical Analytics & Post-Match Intelligence
 - **Comprehensive Match Reports**: Points won/lost, conversion rates, forced vs. unforced error ratios, and clutch scoring at 18-18.
 - **2D Court Heatmaps**: Player position densities, shuttle landing distributions, smash directions, and error clusters.
 - **Movement Analytics**: Distance covered (meters), sprint speeds, court coverage percentage, and speed-drop fatigue indicators.

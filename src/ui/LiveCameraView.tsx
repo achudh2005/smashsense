@@ -25,6 +25,8 @@ import { PrivacyModal } from './PrivacyModal';
 import { OnboardingTutorial } from './OnboardingTutorial';
 import { AutoDetectionHUD } from './AutoDetectionHUD';
 import { TacticalCoachCard } from './TacticalCoachCard';
+import { RemoteClickerSettingsModal } from './RemoteClickerSettingsModal';
+import { remoteClickerService } from '../sensors/remoteClickerService';
 import { generateTacticalAdvice } from '../tactical/tacticalSuggestionEngine';
 import { calculateWinProbability } from '../tactical/winProbabilityEngine';
 import { trainingManager } from '../training/trainingManager';
@@ -105,6 +107,10 @@ export const LiveCameraView: React.FC = () => {
   const detailedMatchEvents = useSmashSenseStore((s) => s.detailedMatchEvents);
   const isTacticalCoachOpen = useSmashSenseStore((s) => s.isTacticalCoachOpen);
   const setTacticalCoachOpen = useSmashSenseStore((s) => s.setTacticalCoachOpen);
+  const isRemoteClickerSettingsOpen = useSmashSenseStore((s) => s.isRemoteClickerSettingsOpen);
+  const setRemoteClickerSettingsOpen = useSmashSenseStore((s) => s.setRemoteClickerSettingsOpen);
+  const toggleFlaggedCallsModal = useSmashSenseStore((s) => s.toggleFlaggedCallsModal);
+  const toggleTrainingModal = useSmashSenseStore((s) => s.toggleTrainingModal);
 
   // Compute live match analytics report
   const matchAnalysis = useMemo(() => {
@@ -159,6 +165,33 @@ export const LiveCameraView: React.FC = () => {
       requestWakeLock().catch(() => {});
     }
   }, [isSupported, requestWakeLock]);
+
+  // Connect Bluetooth Remote Clicker events to match scoring & controls
+  useEffect(() => {
+    const unsubPointA = remoteClickerService.onAction('POINT_A', () => {
+      awardPoint('A', 'Remote Clicker');
+    });
+    const unsubPointB = remoteClickerService.onAction('POINT_B', () => {
+      awardPoint('B', 'Remote Clicker');
+    });
+    const unsubUndo = remoteClickerService.onAction('UNDO', () => {
+      undoScore();
+    });
+    const unsubChallenge = remoteClickerService.onAction('CHALLENGE', () => {
+      toggleFlaggedCallsModal();
+    });
+    const unsubDrill = remoteClickerService.onAction('TOGGLE_DRILL', () => {
+      toggleTrainingModal();
+    });
+
+    return () => {
+      unsubPointA();
+      unsubPointB();
+      unsubUndo();
+      unsubChallenge();
+      unsubDrill();
+    };
+  }, [awardPoint, undoScore, toggleFlaggedCallsModal, toggleTrainingModal]);
 
   // Initialize Web Worker
   useEffect(() => {
@@ -801,6 +834,12 @@ export const LiveCameraView: React.FC = () => {
       <PrivacyModal
         isOpen={isPrivacyModalOpen}
         onClose={() => setPrivacyModalOpen(false)}
+      />
+
+      {/* Bluetooth Remote Clicker & Acoustic Sensor Modal */}
+      <RemoteClickerSettingsModal
+        isOpen={isRemoteClickerSettingsOpen}
+        onClose={() => setRemoteClickerSettingsOpen(false)}
       />
 
       {/* Interactive Quickstart Onboarding Tour */}

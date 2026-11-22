@@ -92,6 +92,7 @@ export interface SmashSenseState {
   isPrivacyModalOpen: boolean;
   isOnboardingOpen: boolean;
   isTacticalCoachOpen: boolean;
+  isRemoteClickerSettingsOpen: boolean;
   isLowPowerMode: boolean;
   language: Language;
 
@@ -125,6 +126,8 @@ export interface SmashSenseState {
   setOnboardingOpen: (open: boolean) => void;
   setTacticalCoachOpen: (open: boolean) => void;
   toggleTacticalCoach: () => void;
+  setRemoteClickerSettingsOpen: (open: boolean) => void;
+  toggleRemoteClickerSettings: () => void;
   setLowPowerMode: (low: boolean) => void;
   setLanguage: (lang: Language) => void;
   toggleStatsModal: () => void;
@@ -225,6 +228,7 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   isPrivacyModalOpen: false,
   isOnboardingOpen: false,
   isTacticalCoachOpen: false,
+  isRemoteClickerSettingsOpen: false,
   isLowPowerMode: false,
   language: 'en',
 
@@ -457,6 +461,10 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   setTacticalCoachOpen: (open) => set({ isTacticalCoachOpen: open }),
 
   toggleTacticalCoach: () => set((state) => ({ isTacticalCoachOpen: !state.isTacticalCoachOpen })),
+
+  setRemoteClickerSettingsOpen: (open) => set({ isRemoteClickerSettingsOpen: open }),
+
+  toggleRemoteClickerSettings: () => set((state) => ({ isRemoteClickerSettingsOpen: !state.isRemoteClickerSettingsOpen })),
 
   setLowPowerMode: (low) => set({ isLowPowerMode: low }),
 
