@@ -24,6 +24,9 @@ import { PlayerProfilesModal } from './PlayerProfilesModal';
 import { PrivacyModal } from './PrivacyModal';
 import { OnboardingTutorial } from './OnboardingTutorial';
 import { AutoDetectionHUD } from './AutoDetectionHUD';
+import { TacticalCoachCard } from './TacticalCoachCard';
+import { generateTacticalAdvice } from '../tactical/tacticalSuggestionEngine';
+import { calculateWinProbability } from '../tactical/winProbabilityEngine';
 import { trainingManager } from '../training/trainingManager';
 import { playerProfileService } from '../history/playerProfileService';
 import { calculateMatchAnalysis } from '../stats/matchStatsCalculator';
@@ -99,6 +102,10 @@ export const LiveCameraView: React.FC = () => {
   const startNextGame = useSmashSenseStore((s) => s.startNextGame);
   const setCalibrationMode = useSmashSenseStore((s) => s.setCalibrationMode);
 
+  const detailedMatchEvents = useSmashSenseStore((s) => s.detailedMatchEvents);
+  const isTacticalCoachOpen = useSmashSenseStore((s) => s.isTacticalCoachOpen);
+  const setTacticalCoachOpen = useSmashSenseStore((s) => s.setTacticalCoachOpen);
+
   // Compute live match analytics report
   const matchAnalysis = useMemo(() => {
     const playerNamesMap: Record<PlayerRole, string> = {
@@ -114,6 +121,23 @@ export const LiveCameraView: React.FC = () => {
       playerNamesMap
     );
   }, [completedRallies, allPlayerActions, config.format, config.teamANames, config.teamBNames]);
+
+  const tacticalReport = useMemo(() => {
+    const playerNamesMap: Record<PlayerRole, string> = {
+      A1: config.teamANames.A1,
+      A2: config.teamANames.A2 || 'Partner A',
+      B1: config.teamBNames.B1,
+      B2: config.teamBNames.B2 || 'Partner B',
+    };
+    return generateTacticalAdvice(detailedMatchEvents, snapshot, playerNamesMap, 'A');
+  }, [detailedMatchEvents, snapshot, config]);
+
+  const winProbability = useMemo(() => {
+    const currentPlayers = useSmashSenseStore.getState().trackedPlayers;
+    const pA = currentPlayers.find((p) => p.team === 'A');
+    const pB = currentPlayers.find((p) => p.team === 'B');
+    return calculateWinProbability(snapshot, detailedMatchEvents, pA?.speedKmh, pB?.speedKmh);
+  }, [snapshot, detailedMatchEvents]);
 
   const matchAnalysisRef = useRef(matchAnalysis);
   matchAnalysisRef.current = matchAnalysis;
@@ -645,6 +669,19 @@ export const LiveCameraView: React.FC = () => {
 
         {/* Live Player Action Feed in bottom-left */}
         <PlayerActionFeed actions={recentPlayerActions} />
+
+        {/* Tactical AI Coach & Live Win Probability Card */}
+        {isTacticalCoachOpen && (
+          <div className="absolute top-28 right-4 z-30 pointer-events-auto max-w-sm animate-in fade-in slide-in-from-top-4 duration-300">
+            <TacticalCoachCard
+              report={tacticalReport}
+              winProb={winProbability}
+              teamAName={config.teamANames.A1}
+              teamBName={config.teamBNames.B1}
+              onDismiss={() => setTacticalCoachOpen(false)}
+            />
+          </div>
+        )}
 
         {/* Simulated Match Banner if active */}
         {isSimulationMode && (

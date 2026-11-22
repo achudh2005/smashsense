@@ -30,6 +30,7 @@ import {
   Command,
   ShieldCheck,
   Scan,
+  Sparkles,
 } from 'lucide-react';
 
 interface TopBarProps {
@@ -71,6 +72,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   const setProfilesModalOpen = useSmashSenseStore((s) => s.setProfilesModalOpen);
   const setPrivacyModalOpen = useSmashSenseStore((s) => s.setPrivacyModalOpen);
   const setOnboardingOpen = useSmashSenseStore((s) => s.setOnboardingOpen);
+  const isTacticalCoachOpen = useSmashSenseStore((s) => s.isTacticalCoachOpen);
+  const toggleTacticalCoach = useSmashSenseStore((s) => s.toggleTacticalCoach);
   const isLowPowerMode = useSmashSenseStore((s) => s.isLowPowerMode);
   const toggleLowPowerMode = useSmashSenseStore((s) => s.toggleLowPowerMode);
   const language = useSmashSenseStore((s) => s.language);
@@ -223,6 +226,23 @@ export const TopBar: React.FC<TopBarProps> = ({
           >
             <Scan size={15} className={isAutoDetectEnabled ? 'animate-pulse' : ''} />
             <span className="hidden xl:inline">Auto-AI</span>
+          </button>
+
+          {/* Tactical AI Coach Toggle */}
+          <button
+            onClick={() => {
+              triggerHaptic('light');
+              toggleTacticalCoach();
+            }}
+            className={`p-2 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
+              isTacticalCoachOpen
+                ? 'bg-purple-600 text-white shadow-sm ring-1 ring-purple-400'
+                : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
+            }`}
+            title="Toggle Tactical AI Coach & Live Win Probability"
+          >
+            <Sparkles size={15} className={isTacticalCoachOpen ? 'text-amber-300' : 'text-purple-400'} />
+            <span className="hidden xl:inline">Coach</span>
           </button>
 
           {/* Mini Court Toggle */}

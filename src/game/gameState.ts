@@ -11,6 +11,9 @@ import { LineCallEvaluation } from '../court/lineCallEngine';
 import { accuracyManager } from '../court/accuracyManager';
 import { speechService } from '../voice/speechService';
 import { Language } from '../i18n/translations';
+import { DetailedMatchEvent, createDetailedMatchEvent } from '../tactical/matchEventModel';
+import { isCoachIntervalTrigger } from '../tactical/tacticalSuggestionEngine';
+import { db } from '../storage/db';
 
 export interface MatchConfig {
   format: 'singles' | 'doubles';
@@ -35,6 +38,7 @@ export interface SmashSenseState {
   recentPlayerActions: PlayerActionEvent[];
   completedRallies: CompletedRally[];
   allPlayerActions: PlayerActionEvent[];
+  detailedMatchEvents: DetailedMatchEvent[];
   activeLandingCall: {
     call: LineCallEvaluation;
     pointType?: 'WINNER' | 'UNFORCED_ERROR' | 'FORCED_ERROR';
@@ -87,6 +91,7 @@ export interface SmashSenseState {
   isProfilesModalOpen: boolean;
   isPrivacyModalOpen: boolean;
   isOnboardingOpen: boolean;
+  isTacticalCoachOpen: boolean;
   isLowPowerMode: boolean;
   language: Language;
 
@@ -118,6 +123,8 @@ export interface SmashSenseState {
   setProfilesModalOpen: (open: boolean) => void;
   setPrivacyModalOpen: (open: boolean) => void;
   setOnboardingOpen: (open: boolean) => void;
+  setTacticalCoachOpen: (open: boolean) => void;
+  toggleTacticalCoach: () => void;
   setLowPowerMode: (low: boolean) => void;
   setLanguage: (lang: Language) => void;
   toggleStatsModal: () => void;
@@ -201,6 +208,7 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
 
   completedRallies: [],
   allPlayerActions: [],
+  detailedMatchEvents: [],
   isSetupWizardOpen: false,
   isCalibrationMode: false,
   showMiniCourt: true,
@@ -216,6 +224,7 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   isProfilesModalOpen: false,
   isPrivacyModalOpen: false,
   isOnboardingOpen: false,
+  isTacticalCoachOpen: false,
   isLowPowerMode: false,
   language: 'en',
 
@@ -339,12 +348,26 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
       winnerName
     );
 
+    // Build detailed match event for tactical AI
+    const playerNamesMap: Record<PlayerRole, string> = {
+      A1: config.teamANames.A1,
+      A2: config.teamANames.A2 || 'Partner A',
+      B1: config.teamBNames.B1,
+      B2: config.teamBNames.B2 || 'Partner B',
+    };
+    const detailedEvent = createDetailedMatchEvent(rally, snap, playerNamesMap);
+    db.detailedEvents.add(detailedEvent).catch(console.warn);
+
+    const isIntervalTrigger = isCoachIntervalTrigger(snap);
+
     set((state) => ({
       snapshot: snap,
       auditLog: engine.getAuditLog(),
       completedGames: engine.getCompletedGames(),
       completedRallies: [...state.completedRallies, rally],
       allPlayerActions: [...state.allPlayerActions, ...rally.actions],
+      detailedMatchEvents: [...state.detailedMatchEvents, detailedEvent],
+      isTacticalCoachOpen: isIntervalTrigger ? true : state.isTacticalCoachOpen,
       activeLandingCall: {
         call: rally.lineCall,
         pointType: rally.pointType,
@@ -430,6 +453,10 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   setPrivacyModalOpen: (open) => set({ isPrivacyModalOpen: open }),
 
   setOnboardingOpen: (open) => set({ isOnboardingOpen: open }),
+
+  setTacticalCoachOpen: (open) => set({ isTacticalCoachOpen: open }),
+
+  toggleTacticalCoach: () => set((state) => ({ isTacticalCoachOpen: !state.isTacticalCoachOpen })),
 
   setLowPowerMode: (low) => set({ isLowPowerMode: low }),
 

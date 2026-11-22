@@ -59,7 +59,17 @@ SmashSense adheres to Apple Human Interface Guidelines with a design focused on 
 - **Match Formats**: Singles and doubles with server rotation, side switches, and intervals.
 - **Score Auditing**: Full undo/redo stack with an immutable audit log of all automated and manual score adjustments.
 
-### 5. Tactical Analytics & Post-Match Intelligence
+### 5. Tactical AI & Game Intelligence (Phase 1)
+- **Detailed Match Event Model**: Granular event logging storing shot type, 1-9 BWF court zone mapping, winner, error type (unforced, forced, net cord, out, missed return), rally shot count, duration, server state, and peak shuttle speed in Dexie IndexedDB.
+- **Live In-Game Coach**: Automatic tactical triggers at 11-point intervals and between games. Derives advice strictly from real statistical data:
+  - *Opponent Vulnerability*: Identifies error-prone opponent strokes (e.g., "Opponent is vulnerable on deep backhand clears (62% error rate)").
+  - *Target Zone Conversion*: High-value court landing zones (e.g., "Target Zone 3: 75% of your winning points ended in front-right net zone").
+  - *Rally Length Pacing*: Optimal rally duration and endurance trends.
+  - *Serve Conversion*: First-strike serve retention rates.
+- **Real-Time Win Probability & Momentum Gauge**: Dynamic win probability model calibrated for 21-point BWF scoring with real-time momentum index (-100 to +100), visual sparkline trend, and fatigue estimation based on sprint speed degradation.
+- **Coach HUD**: Interactive glassmorphic tactical coach card overlay during live camera matches with toggle button and automatic intermission popups.
+
+### 6. Tactical Analytics & Post-Match Intelligence
 - **Comprehensive Match Reports**: Points won/lost, conversion rates, forced vs. unforced error ratios, and clutch scoring at 18-18.
 - **2D Court Heatmaps**: Player position densities, shuttle landing distributions, smash directions, and error clusters.
 - **Movement Analytics**: Distance covered (meters), sprint speeds, court coverage percentage, and speed-drop fatigue indicators.

@@ -3,6 +3,7 @@ import { Point2D } from '../court/courtGeometry';
 import { Matrix3x3 } from '../court/homography';
 import { PlayerActionEvent } from '../detection/motionClassifier';
 import { CompletedRally } from '../game/rallyStateMachine';
+import { DetailedMatchEvent } from '../tactical/matchEventModel';
 
 export interface VenueRecord {
   id?: number;
@@ -98,10 +99,11 @@ export class SmashSenseDatabase extends Dexie {
   drillResults!: EntityTable<DrillResultRecord, 'id'>;
   flaggedCalls!: EntityTable<FlaggedCallRecord, 'id'>;
   playerProfiles!: EntityTable<PlayerProfileRecord, 'id'>;
+  detailedEvents!: EntityTable<DetailedMatchEvent, 'id'>;
 
   constructor() {
     super('SmashSenseDB');
-    this.version(3).stores({
+    this.version(4).stores({
       venues: '++id, name, lastUsedAt',
       calibrations: '++id, venueId, venueName, updatedAt',
       matches: '++id, venueName, createdAt',
@@ -111,6 +113,7 @@ export class SmashSenseDatabase extends Dexie {
       drillResults: '++id, drillId, drillType, timestamp, score',
       flaggedCalls: 'id, timestamp, call, confidence, userVerdict',
       playerProfiles: '++id, &name, totalMatches, winRate, topSmashSpeedKmh',
+      detailedEvents: 'id, rallyNumber, gameIndex, timestamp, shotType, shotZoneIndex',
     });
   }
 }
