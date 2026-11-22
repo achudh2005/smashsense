@@ -102,6 +102,8 @@ export interface SmashSenseState {
   biomechanicsReport: BiomechanicsReport | null;
   activeBroadcastGraphic: BroadcastGraphicItem | null;
   showBroadcastOverlays: boolean;
+  isDualCameraModalOpen: boolean;
+  isUmpireTabletModeOpen: boolean;
   isLowPowerMode: boolean;
   language: Language;
 
@@ -143,6 +145,10 @@ export interface SmashSenseState {
   triggerBiomechanicsReport: (report: BiomechanicsReport) => void;
   setBroadcastGraphic: (graphic: BroadcastGraphicItem | null) => void;
   setShowBroadcastOverlays: (show: boolean) => void;
+  setDualCameraModalOpen: (open: boolean) => void;
+  toggleDualCameraModal: () => void;
+  setUmpireTabletModeOpen: (open: boolean) => void;
+  toggleUmpireTabletMode: () => void;
   setLowPowerMode: (low: boolean) => void;
   setLanguage: (lang: Language) => void;
   toggleStatsModal: () => void;
@@ -250,6 +256,8 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   biomechanicsReport: null,
   activeBroadcastGraphic: null,
   showBroadcastOverlays: true,
+  isDualCameraModalOpen: false,
+  isUmpireTabletModeOpen: false,
   isLowPowerMode: false,
   language: 'en',
 
@@ -555,6 +563,14 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   setBroadcastGraphic: (graphic) => set({ activeBroadcastGraphic: graphic }),
 
   setShowBroadcastOverlays: (show) => set({ showBroadcastOverlays: show }),
+
+  setDualCameraModalOpen: (open) => set({ isDualCameraModalOpen: open }),
+
+  toggleDualCameraModal: () => set((state) => ({ isDualCameraModalOpen: !state.isDualCameraModalOpen })),
+
+  setUmpireTabletModeOpen: (open) => set({ isUmpireTabletModeOpen: open }),
+
+  toggleUmpireTabletMode: () => set((state) => ({ isUmpireTabletModeOpen: !state.isUmpireTabletModeOpen })),
 
   setLowPowerMode: (low) => set({ isLowPowerMode: low }),
 

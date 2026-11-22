@@ -98,7 +98,19 @@ SmashSense adheres to Apple Human Interface Guidelines with a design focused on 
   - Kinematic metrics: Jump clearance (cm), contact height relative to floor (meters), arm extension angle (target 165° – 180°), and rotational pronation velocity (°/sec).
   - Interactive scrubbable player with skeleton stick figure, joint angle arcs, and variable slow-mo speeds (0.25x, 0.5x, 1.0x).
 
-### 8. Tactical Analytics & Post-Match Intelligence
+### 8. Multi-Camera & Collaborative Modes (Phase 4)
+- **Dual-Phone Wireless Hawk-Eye (WebRTC Peer-to-Peer)**:
+  - Zero-server, instant pairing between two mobile devices using camera QR codes and WebRTC DataChannels.
+  - Device A (behind baseline, primary) acts as the main scoring and tracking engine.
+  - Device B (placed at the sideline or net post) operates as an auxiliary angle detector, transmitting timestamped line evaluations over local P2P channels with sub-15ms latency.
+  - Multi-Angle Consensus Engine: Combines baseline and sideline perspectives. Sideline 90° views automatically resolve contentious baseline calls when primary confidence is uncertain.
+- **Referee & Umpire Tablet Mode**:
+  - Chair-side full-screen landscape layout designed for match umpires with oversized touch targets ($\ge 64$px) for rapid tactile scoring.
+  - Quick BWF fault penalty buttons: Service faults (serve $>1.15$m, foot fault, racket head not down, delay of serve) and general faults (net touch, body/clothing touch, double hit, obstruction).
+  - Official BWF Discipline Tracking: Yellow cards (warning), Red cards (penalty fault + point to opponent), and Black cards (disqualification).
+  - Built-in 60-second and 120-second interval timers with an electric umpire acoustic buzzer upon expiry.
+
+### 9. Tactical Analytics & Post-Match Intelligence
 - **Comprehensive Match Reports**: Points won/lost, conversion rates, forced vs. unforced error ratios, and clutch scoring at 18-18.
 - **2D Court Heatmaps**: Player position densities, shuttle landing distributions, smash directions, and error clusters.
 - **Movement Analytics**: Distance covered (meters), sprint speeds, court coverage percentage, and speed-drop fatigue indicators.

@@ -29,6 +29,8 @@ import { RemoteClickerSettingsModal } from './RemoteClickerSettingsModal';
 import { HawkEyeReplayModal } from './HawkEyeReplayModal';
 import { BroadcastGraphicsOverlay } from './BroadcastGraphicsOverlay';
 import { BiomechanicsModal } from './BiomechanicsModal';
+import { DualCameraModal } from './DualCameraModal';
+import { UmpireTabletMode } from './UmpireTabletMode';
 import { poseFrameRollingBuffer } from '../detection/biomechanicsAnalyzer';
 import { remoteClickerService } from '../sensors/remoteClickerService';
 import { generateTacticalAdvice } from '../tactical/tacticalSuggestionEngine';
@@ -121,6 +123,10 @@ export const LiveCameraView: React.FC = () => {
   const setBiomechanicsModalOpen = useSmashSenseStore((s) => s.setBiomechanicsModalOpen);
   const activeBroadcastGraphic = useSmashSenseStore((s) => s.activeBroadcastGraphic);
   const setBroadcastGraphic = useSmashSenseStore((s) => s.setBroadcastGraphic);
+  const isDualCameraModalOpen = useSmashSenseStore((s) => s.isDualCameraModalOpen);
+  const setDualCameraModalOpen = useSmashSenseStore((s) => s.setDualCameraModalOpen);
+  const isUmpireTabletModeOpen = useSmashSenseStore((s) => s.isUmpireTabletModeOpen);
+  const setUmpireTabletModeOpen = useSmashSenseStore((s) => s.setUmpireTabletModeOpen);
   const toggleFlaggedCallsModal = useSmashSenseStore((s) => s.toggleFlaggedCallsModal);
   const toggleTrainingModal = useSmashSenseStore((s) => s.toggleTrainingModal);
 
@@ -877,6 +883,18 @@ export const LiveCameraView: React.FC = () => {
         isOpen={isBiomechanicsModalOpen}
         onClose={() => setBiomechanicsModalOpen(false)}
         report={biomechanicsReport}
+      />
+
+      {/* Dual-Phone Wireless WebRTC Hawk-Eye Modal */}
+      <DualCameraModal
+        isOpen={isDualCameraModalOpen}
+        onClose={() => setDualCameraModalOpen(false)}
+      />
+
+      {/* Referee & Umpire Tablet Mode Overlay */}
+      <UmpireTabletMode
+        isOpen={isUmpireTabletModeOpen}
+        onClose={() => setUmpireTabletModeOpen(false)}
       />
 
       {/* Interactive Quickstart Onboarding Tour */}

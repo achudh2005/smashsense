@@ -33,6 +33,8 @@ import {
   Sparkles,
   Radio,
   Eye,
+  Smartphone,
+  ShieldAlert,
 } from 'lucide-react';
 
 interface TopBarProps {
@@ -82,6 +84,10 @@ export const TopBar: React.FC<TopBarProps> = ({
   const setHawkEyeReplayOpen = useSmashSenseStore((s) => s.setHawkEyeReplayOpen);
   const isBiomechanicsModalOpen = useSmashSenseStore((s) => s.isBiomechanicsModalOpen);
   const setBiomechanicsModalOpen = useSmashSenseStore((s) => s.setBiomechanicsModalOpen);
+  const isDualCameraModalOpen = useSmashSenseStore((s) => s.isDualCameraModalOpen);
+  const toggleDualCameraModal = useSmashSenseStore((s) => s.toggleDualCameraModal);
+  const isUmpireTabletModeOpen = useSmashSenseStore((s) => s.isUmpireTabletModeOpen);
+  const toggleUmpireTabletMode = useSmashSenseStore((s) => s.toggleUmpireTabletMode);
   const isLowPowerMode = useSmashSenseStore((s) => s.isLowPowerMode);
   const toggleLowPowerMode = useSmashSenseStore((s) => s.toggleLowPowerMode);
   const language = useSmashSenseStore((s) => s.language);
@@ -302,6 +308,40 @@ export const TopBar: React.FC<TopBarProps> = ({
           >
             <Activity size={15} className={isBiomechanicsModalOpen ? 'text-white' : 'text-sky-400'} />
             <span className="hidden xl:inline">Biomech</span>
+          </button>
+
+          {/* Dual-Phone Wireless WebRTC Hawk-Eye */}
+          <button
+            onClick={() => {
+              triggerHaptic('light');
+              toggleDualCameraModal();
+            }}
+            className={`p-2 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
+              isDualCameraModalOpen
+                ? 'bg-sky-600 text-white shadow-sm ring-1 ring-sky-400'
+                : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
+            }`}
+            title="Dual-Phone Multi-Camera Hawk-Eye"
+          >
+            <Smartphone size={15} className={isDualCameraModalOpen ? 'text-white' : 'text-sky-400'} />
+            <span className="hidden xl:inline">Dual-Cam</span>
+          </button>
+
+          {/* Referee & Umpire Tablet Mode */}
+          <button
+            onClick={() => {
+              triggerHaptic('medium');
+              toggleUmpireTabletMode();
+            }}
+            className={`p-2 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
+              isUmpireTabletModeOpen
+                ? 'bg-red-600 text-white shadow-sm ring-1 ring-red-400'
+                : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
+            }`}
+            title="Official BWF Umpire Tablet Mode"
+          >
+            <ShieldAlert size={15} className={isUmpireTabletModeOpen ? 'text-white' : 'text-rose-400'} />
+            <span className="hidden xl:inline">Umpire</span>
           </button>
 
           {/* Mini Court Toggle */}
