@@ -35,6 +35,7 @@ import {
   Eye,
   Smartphone,
   ShieldAlert,
+  Share2,
 } from 'lucide-react';
 
 interface TopBarProps {
@@ -88,6 +89,10 @@ export const TopBar: React.FC<TopBarProps> = ({
   const toggleDualCameraModal = useSmashSenseStore((s) => s.toggleDualCameraModal);
   const isUmpireTabletModeOpen = useSmashSenseStore((s) => s.isUmpireTabletModeOpen);
   const toggleUmpireTabletMode = useSmashSenseStore((s) => s.toggleUmpireTabletMode);
+  const isStoryCardModalOpen = useSmashSenseStore((s) => s.isStoryCardModalOpen);
+  const toggleStoryCardModal = useSmashSenseStore((s) => s.toggleStoryCardModal);
+  const isTournamentManagerModalOpen = useSmashSenseStore((s) => s.isTournamentManagerModalOpen);
+  const toggleTournamentManagerModal = useSmashSenseStore((s) => s.toggleTournamentManagerModal);
   const isLowPowerMode = useSmashSenseStore((s) => s.isLowPowerMode);
   const toggleLowPowerMode = useSmashSenseStore((s) => s.toggleLowPowerMode);
   const language = useSmashSenseStore((s) => s.language);
@@ -342,6 +347,40 @@ export const TopBar: React.FC<TopBarProps> = ({
           >
             <ShieldAlert size={15} className={isUmpireTabletModeOpen ? 'text-white' : 'text-rose-400'} />
             <span className="hidden xl:inline">Umpire</span>
+          </button>
+
+          {/* Shareable Match Story Poster */}
+          <button
+            onClick={() => {
+              triggerHaptic('light');
+              toggleStoryCardModal();
+            }}
+            className={`p-2 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
+              isStoryCardModalOpen
+                ? 'bg-pink-600 text-white shadow-sm ring-1 ring-pink-400'
+                : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
+            }`}
+            title="Generate Shareable Story Poster (1080x1920)"
+          >
+            <Share2 size={15} className={isStoryCardModalOpen ? 'text-white' : 'text-pink-400'} />
+            <span className="hidden xl:inline">Story</span>
+          </button>
+
+          {/* Tournament & Bracket Manager */}
+          <button
+            onClick={() => {
+              triggerHaptic('light');
+              toggleTournamentManagerModal();
+            }}
+            className={`p-2 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
+              isTournamentManagerModalOpen
+                ? 'bg-amber-600 text-white shadow-sm ring-1 ring-amber-400'
+                : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
+            }`}
+            title="Tournament & Bracket Manager"
+          >
+            <Trophy size={15} className={isTournamentManagerModalOpen ? 'text-white' : 'text-amber-400'} />
+            <span className="hidden xl:inline">Tourney</span>
           </button>
 
           {/* Mini Court Toggle */}

@@ -104,6 +104,8 @@ export interface SmashSenseState {
   showBroadcastOverlays: boolean;
   isDualCameraModalOpen: boolean;
   isUmpireTabletModeOpen: boolean;
+  isStoryCardModalOpen: boolean;
+  isTournamentManagerModalOpen: boolean;
   isLowPowerMode: boolean;
   language: Language;
 
@@ -149,6 +151,10 @@ export interface SmashSenseState {
   toggleDualCameraModal: () => void;
   setUmpireTabletModeOpen: (open: boolean) => void;
   toggleUmpireTabletMode: () => void;
+  setStoryCardModalOpen: (open: boolean) => void;
+  toggleStoryCardModal: () => void;
+  setTournamentManagerModalOpen: (open: boolean) => void;
+  toggleTournamentManagerModal: () => void;
   setLowPowerMode: (low: boolean) => void;
   setLanguage: (lang: Language) => void;
   toggleStatsModal: () => void;
@@ -258,6 +264,8 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   showBroadcastOverlays: true,
   isDualCameraModalOpen: false,
   isUmpireTabletModeOpen: false,
+  isStoryCardModalOpen: false,
+  isTournamentManagerModalOpen: false,
   isLowPowerMode: false,
   language: 'en',
 
@@ -571,6 +579,14 @@ export const useSmashSenseStore = create<SmashSenseState>((set, get) => ({
   setUmpireTabletModeOpen: (open) => set({ isUmpireTabletModeOpen: open }),
 
   toggleUmpireTabletMode: () => set((state) => ({ isUmpireTabletModeOpen: !state.isUmpireTabletModeOpen })),
+
+  setStoryCardModalOpen: (open) => set({ isStoryCardModalOpen: open }),
+
+  toggleStoryCardModal: () => set((state) => ({ isStoryCardModalOpen: !state.isStoryCardModalOpen })),
+
+  setTournamentManagerModalOpen: (open) => set({ isTournamentManagerModalOpen: open }),
+
+  toggleTournamentManagerModal: () => set((state) => ({ isTournamentManagerModalOpen: !state.isTournamentManagerModalOpen })),
 
   setLowPowerMode: (low) => set({ isLowPowerMode: low }),
 

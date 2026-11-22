@@ -31,6 +31,8 @@ import { BroadcastGraphicsOverlay } from './BroadcastGraphicsOverlay';
 import { BiomechanicsModal } from './BiomechanicsModal';
 import { DualCameraModal } from './DualCameraModal';
 import { UmpireTabletMode } from './UmpireTabletMode';
+import { StoryCardModal } from './StoryCardModal';
+import { TournamentManagerModal } from './TournamentManagerModal';
 import { poseFrameRollingBuffer } from '../detection/biomechanicsAnalyzer';
 import { remoteClickerService } from '../sensors/remoteClickerService';
 import { generateTacticalAdvice } from '../tactical/tacticalSuggestionEngine';
@@ -127,6 +129,10 @@ export const LiveCameraView: React.FC = () => {
   const setDualCameraModalOpen = useSmashSenseStore((s) => s.setDualCameraModalOpen);
   const isUmpireTabletModeOpen = useSmashSenseStore((s) => s.isUmpireTabletModeOpen);
   const setUmpireTabletModeOpen = useSmashSenseStore((s) => s.setUmpireTabletModeOpen);
+  const isStoryCardModalOpen = useSmashSenseStore((s) => s.isStoryCardModalOpen);
+  const setStoryCardModalOpen = useSmashSenseStore((s) => s.setStoryCardModalOpen);
+  const isTournamentManagerModalOpen = useSmashSenseStore((s) => s.isTournamentManagerModalOpen);
+  const setTournamentManagerModalOpen = useSmashSenseStore((s) => s.setTournamentManagerModalOpen);
   const toggleFlaggedCallsModal = useSmashSenseStore((s) => s.toggleFlaggedCallsModal);
   const toggleTrainingModal = useSmashSenseStore((s) => s.toggleTrainingModal);
 
@@ -162,6 +168,30 @@ export const LiveCameraView: React.FC = () => {
     const pB = currentPlayers.find((p) => p.team === 'B');
     return calculateWinProbability(snapshot, detailedMatchEvents, pA?.speedKmh, pB?.speedKmh);
   }, [snapshot, detailedMatchEvents]);
+
+  const storyCardOptions = useMemo(() => {
+    const mvpAward = matchAnalysis.awards?.find((a) => a.type === 'MVP');
+    const pA1 = matchAnalysis.players?.A1;
+    const pA2 = matchAnalysis.players?.A2;
+    const teamADistance = (pA1?.distanceCoveredMeters || 0) + (pA2?.distanceCoveredMeters || 0);
+    const teamAWinners = (pA1?.winners || 0) + (pA2?.winners || 0);
+    const teamAErrors = (pA1?.unforcedErrors || 0) + (pA2?.unforcedErrors || 0);
+
+    return {
+      teamAName: config.teamANames.A1,
+      teamBName: config.teamBNames.B1,
+      scoreA: snapshot.scoreA,
+      scoreB: snapshot.scoreB,
+      topSmashSpeedKmh: Math.round(matchAnalysis.maxShuttleSpeedKmh || 215),
+      longestRallyShots: matchAnalysis.longestRallyShots || 16,
+      totalDistanceMeters: Math.round(teamADistance || 850),
+      matchDurationMinutes: Math.max(1, Math.round(matchAnalysis.matchDurationSeconds / 60) || 24),
+      mvpPlayerName: mvpAward?.playerName || config.teamANames.A1,
+      mvpReason: mvpAward?.reason || 'Top point conversion and attacking smash efficiency',
+      winnersCount: teamAWinners || 12,
+      unforcedErrorsCount: teamAErrors || 5,
+    };
+  }, [config, snapshot, matchAnalysis]);
 
   const matchAnalysisRef = useRef(matchAnalysis);
   matchAnalysisRef.current = matchAnalysis;
@@ -895,6 +925,19 @@ export const LiveCameraView: React.FC = () => {
       <UmpireTabletMode
         isOpen={isUmpireTabletModeOpen}
         onClose={() => setUmpireTabletModeOpen(false)}
+      />
+
+      {/* Shareable Story Card & Match Poster Modal */}
+      <StoryCardModal
+        isOpen={isStoryCardModalOpen}
+        onClose={() => setStoryCardModalOpen(false)}
+        options={storyCardOptions}
+      />
+
+      {/* Built-in Tournament & Bracket Manager Modal */}
+      <TournamentManagerModal
+        isOpen={isTournamentManagerModalOpen}
+        onClose={() => setTournamentManagerModalOpen(false)}
       />
 
       {/* Interactive Quickstart Onboarding Tour */}

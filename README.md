@@ -110,13 +110,24 @@ SmashSense adheres to Apple Human Interface Guidelines with a design focused on 
   - Official BWF Discipline Tracking: Yellow cards (warning), Red cards (penalty fault + point to opponent), and Black cards (disqualification).
   - Built-in 60-second and 120-second interval timers with an electric umpire acoustic buzzer upon expiry.
 
-### 9. Tactical Analytics & Post-Match Intelligence
+### 9. Export, Social & Tournament System (Phase 5)
+- **Shareable Story Card & Match Poster Generator**:
+  - High-resolution vertical 9:16 portrait canvas poster (1080 $\times$ 1920 pixels) optimized for Instagram Stories, WhatsApp Status, and social sharing.
+  - Automatically composites match telemetry: final score, MVP badge & technical rationale, top smash velocity (km/h), longest rally duration, distance covered, winner/unforced error differentials, and official SmashSense watermark.
+  - Direct 1-tap download (PNG) and native mobile Web Share API integration (`navigator.share`).
+- **Built-in Tournament & Bracket Manager**:
+  - Offline-first tournament management supporting **Single Elimination** knockout brackets and **Round Robin** leagues.
+  - Automatic seed assignment, bracket progression tree, and round-robin points table (played, won, lost, points scored, goal difference).
+  - Direct match handoff: Launch any tournament match straight into the live camera tracking view and automatically sync back final game scores upon conclusion.
+  - Persistent IndexedDB storage via Dexie for multiple active local club tournaments.
+
+### 10. Tactical Analytics & Post-Match Intelligence
 - **Comprehensive Match Reports**: Points won/lost, conversion rates, forced vs. unforced error ratios, and clutch scoring at 18-18.
 - **2D Court Heatmaps**: Player position densities, shuttle landing distributions, smash directions, and error clusters.
 - **Movement Analytics**: Distance covered (meters), sprint speeds, court coverage percentage, and speed-drop fatigue indicators.
 - **Multi-Format Exports**: Export structured CSV files, high-resolution social summary image cards, and printable PDF match reports.
 
-### 6. Training Drills & Voice Features
+### 11. Training Drills & Voice Features
 - **Solo Training Mode**: Target-zone accuracy drills (short serves, drop shots, smashes) and cadence footwork timers.
 - **Player Career Profiles**: Track head-to-head records, personal best smash speeds, and win streaks over time.
 - **Hands-Free Voice Control**: Spoken score announcements ("Love all. Play", "Game point") and speech recognition commands ("Start", "Undo", "Point A", "Next Game").

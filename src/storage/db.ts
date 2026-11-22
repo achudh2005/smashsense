@@ -76,6 +76,31 @@ export interface FlaggedCallRecord {
   adjustedMarginCm?: number;
 }
 
+export interface TournamentMatch {
+  id: string;
+  roundIndex: number;
+  matchIndex: number;
+  playerA: string;
+  playerB: string;
+  scoreA?: number;
+  scoreB?: number;
+  winner?: string;
+  isCompleted: boolean;
+  nextMatchId?: string;
+}
+
+export interface TournamentRecord {
+  id?: number;
+  title: string;
+  format: 'single_elimination' | 'double_elimination' | 'round_robin';
+  participants: string[];
+  matches: TournamentMatch[];
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+  champion?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface PlayerProfileRecord {
   id?: number;
   name: string;
@@ -100,10 +125,11 @@ export class SmashSenseDatabase extends Dexie {
   flaggedCalls!: EntityTable<FlaggedCallRecord, 'id'>;
   playerProfiles!: EntityTable<PlayerProfileRecord, 'id'>;
   detailedEvents!: EntityTable<DetailedMatchEvent, 'id'>;
+  tournaments!: EntityTable<TournamentRecord, 'id'>;
 
   constructor() {
     super('SmashSenseDB');
-    this.version(4).stores({
+    this.version(5).stores({
       venues: '++id, name, lastUsedAt',
       calibrations: '++id, venueId, venueName, updatedAt',
       matches: '++id, venueName, createdAt',
@@ -114,6 +140,7 @@ export class SmashSenseDatabase extends Dexie {
       flaggedCalls: 'id, timestamp, call, confidence, userVerdict',
       playerProfiles: '++id, &name, totalMatches, winRate, topSmashSpeedKmh',
       detailedEvents: 'id, rallyNumber, gameIndex, timestamp, shotType, shotZoneIndex',
+      tournaments: '++id, title, format, status, createdAt',
     });
   }
 }
